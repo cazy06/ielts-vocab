@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh;overflow-x:hidden}
@@ -631,14 +632,19 @@ function save(d){try{localStorage.setItem(SK,JSON.stringify(d))}catch{}}
 // ===== ユーティリティ =====
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
 
-// ===== 発音 =====
+// ===== 発音 (ResponsiveVoice) =====
 function speak(word,e){
   if(e){e.stopPropagation();}
-  if(!window.speechSynthesis)return;
-  window.speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(word);
-  u.lang='en-US';u.rate=0.85;
-  window.speechSynthesis.speak(u);
+  if(window.responsiveVoice){
+    responsiveVoice.speak(word,'US English Female',{rate:0.9});
+  } else {
+    // フォールバック: Web Speech API
+    if(!window.speechSynthesis)return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(word);
+    u.lang='en-US';u.rate=0.85;
+    window.speechSynthesis.speak(u);
+  }
 }
 
 // ===== APP =====
