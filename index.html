@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>IELTS 単語帳 3500</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh;overflow-x:hidden}
+.card-scene{perspective:1200px}
+.card-body{transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.card-body.flipped{transform:rotateY(180deg)}
+.card-face{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.card-back{transform:rotateY(180deg)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@keyframes correct{0%{box-shadow:0 0 0 0 rgba(52,211,153,.4)}100%{box-shadow:0 0 0 16px rgba(52,211,153,0)}}
+.slide-up{animation:slideUp .35s ease}
+.progress-bar{height:3px;background:#1e293b;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#e91e8c,#f43f5e);border-radius:2px;transition:width .5s ease}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:#0f172a}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+.btn{transition:all .15s ease}
+.btn:active{transform:scale(.95)}
+input,textarea{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect,useCallback,useRef,useMemo}=React;
+
+// ===== 単語データ (動画OCRより抽出 581語) =====
+const BASE_WORDS=[
+  {id:1,w:"being",m:"存在；生き物",s:"existence"},
+  {id:2,w:"government",m:"政府；統治",s:"the authorities"},
+  {id:3,w:"found",m:"を設立する",s:"establish"},
+  {id:4,w:"given",m:"〜を仮定すれば",s:"tike"},
+  {id:9,w:"means",m:"手段，方法",s:"method"},
+  {id:10,w:"likely",m:"ありそうな；予想される",s:"probable"},
+  {id:11,w:"therefore",m:"それ故に，従って",s:"as a result"},
+  {id:13,w:"range",m:"範囲；幅",s:"scope"},
+  {id:14,w:"thus",m:"",s:"thereby"},
+  {id:15,w:"individual",m:"個人；個別の",s:"separate"},
+  {id:16,w:"committee",m:"",s:""},
+  {id:38,w:"property",m:"財産；特性",s:"estate"},
+  {id:39,w:"term",m:"期間；用語",s:"word"},
+  {id:40,w:"throughout",m:"",s:"OESMlc"},
+  {id:51,w:"potential",m:"潜在的な；可能性",s:"capacity"},
+  {id:55,w:"independent",m:"独立した",s:"autonomous"},
+  {id:56,w:"benefit",m:"利益；恩恵",s:"advantage"},
+  {id:57,w:"employment",m:"",s:"work"},
+  {id:58,w:"sales",m:"",s:"revenue"},
+  {id:77,w:"considerable",m:"かなりの",s:"substantial"},
+  {id:78,w:"physical",m:"物理的な；身体的な",s:"bodily"},
+  {id:79,w:"complex",m:"複雑な",s:"complicated"},
+  {id:81,w:"opposition",m:"反対；野党",s:"resistance"},
+  {id:82,w:"division",m:"",s:"split"},
+  {id:83,w:"surface",m:"",s:"face"},
+  {id:84,w:"equipment",m:"設備；機器",s:""},
+  {id:102,w:"district",m:"",s:""},
+  {id:103,w:"executive",m:"",s:"director"},
+  {id:104,w:"neither",m:"",s:"nor"},
+  {id:105,w:"duty",m:"",s:"responsibility"},
+  {id:106,w:"presence",m:"",s:"being"},
+  {id:130,w:"vote",m:"",s:"cast a ballot"},
+  {id:132,w:"nevertheless",m:"",s:"even so"},
+  {id:133,w:"insurance",m:"保険",s:"assurance"},
+  {id:134,w:"strength",m:"",s:"power"},
+  {id:135,w:"crime",m:"",s:""},
+  {id:153,w:"increasingly",m:"",s:"more and more"},
+  {id:154,w:"initial",m:"最初の",s:"early"},
+  {id:155,w:"release",m:"を解放する；発表",s:"discharge"},
+  {id:156,w:"existence",m:"",s:"being"},
+  {id:157,w:"latest",m:"",s:"current"},
+  {id:158,w:"relief",m:"",s:"reassurance"},
+  {id:159,w:"detailed",m:"",s:"elaborate"},
+  {id:160,w:"fund",m:"",s:"money"},
+  {id:183,w:"profit",m:"",s:"gain"},
+  {id:184,w:"sufficient",m:"十分な",s:"adequate"},
+  {id:185,w:"democratic",m:"民主的な",s:"parliamentary"},
+  {id:186,w:"conflict",m:"対立；衝突",s:""},
+  {id:196,w:"critical",m:"批判的な；重大な",s:"negative"},
+  {id:197,w:"necessarily",m:"必ずしも〜ではない",s:"inevitably"},
+  {id:198,w:"elsewhere",m:"他の場所で",s:"somewhere else"},
+  {id:200,w:"prove",m:"",s:"verify"},
+  {id:201,w:"familiar",m:"",s:"well"},
+  {id:202,w:"threat",m:"",s:"menace"},
+  {id:203,w:"ideal",m:"",s:""},
+  {id:213,w:"maintain",m:"を維持する",s:"preserve"},
+  {id:214,w:"exhibition",m:"",s:"exposition"},
+  {id:215,w:"empty",m:"",s:"vacant"},
+  {id:217,w:"urban",m:"都市の",s:"city"},
+  {id:218,w:"seek",m:"を求める",s:"pursue"},
+  {id:219,w:"assembly",m:"集会；組み立て",s:"gathering"},
+  {id:220,w:"audience",m:"聴衆",s:""},
+  {id:238,w:"protect",m:"",s:"safeguard"},
+  {id:239,w:"description",m:"説明；記述",s:"explanation"},
+  {id:240,w:"vital",m:"",s:"critical"},
+  {id:241,w:"pleasure",m:"",s:"delight"},
+  {id:242,w:"tradition",m:"",s:"convention"},
+  {id:243,w:"criminal",m:"犯罪者；犯罪の",s:"offender"},
+  {id:244,w:"treaty",m:"",s:"agreement"},
+  {id:245,w:"advance",m:"",s:"further"},
+  {id:255,w:"principal",m:"",s:"main"},
+  {id:256,w:"suit",m:"",s:"match"},
+  {id:257,w:"capable",m:"",s:"able"},
+  {id:258,w:"stress",m:"",s:"emphasise"},
+  {id:259,w:"typical",m:"典型的な",s:"average"},
+  {id:260,w:"welfare",m:"福祉；幸福",s:"well"},
+  {id:261,w:"relative",m:"",s:"comparative"},
+  {id:262,w:"beneath",m:"",s:"OP IE"},
+  {id:272,w:"significance",m:"",s:"importance"},
+  {id:273,w:"injury",m:"",s:"wound"},
+  {id:274,w:"vast",m:"",s:"broad"},
+  {id:275,w:"revolution",m:"",s:"transformation"},
+  {id:276,w:"rare",m:"",s:"unusual"},
+  {id:277,w:"severe",m:"",s:"harsh"},
+  {id:278,w:"unlike",m:"〜と違って",s:"tREoT"},
+  {id:279,w:"obtain",m:"を得る",s:"get"},
+  {id:298,w:"odd",m:"",s:"strange"},
+  {id:299,w:"assistance",m:"",s:""},
+  {id:300,w:"agent",m:"",s:"representative"},
+  {id:303,w:"describe",m:"",s:"explain"},
+  {id:315,w:"rarely",m:"",s:"ar"},
+  {id:316,w:"guilty",m:"",s:"sorry"},
+  {id:317,w:"indicate",m:"を示す",s:"show"},
+  {id:319,w:"assume",m:"を仮定する",s:"presume"},
+  {id:320,w:"agricultural",m:"",s:"farming"},
+  {id:321,w:"shift",m:"シフト；変化する",s:"move"},
+  {id:340,w:"victim",m:"",s:"casualty"},
+  {id:344,w:"wealth",m:"",s:""},
+  {id:345,w:"foundation",m:"基盤；財団",s:"base"},
+  {id:346,w:"bush",m:"",s:"wilderness"},
+  {id:347,w:"keen",m:"",s:"eager"},
+  {id:366,w:"notion",m:"概念；考え",s:"concept"},
+  {id:367,w:"solid",m:"",s:"firm"},
+  {id:368,w:"chest",m:"",s:"breast"},
+  {id:370,w:"pop",m:"",s:"appear"},
+  {id:371,w:"protest",m:"",s:"object"},
+  {id:372,w:"nearby",m:"",s:"adjacent"},
+  {id:373,w:"remarkable",m:"",s:""},
+  {id:383,w:"intelligence",m:"",s:"intellect"},
+  {id:384,w:"apart",m:"",s:"away"},
+  {id:385,w:"consequence",m:"結果；重要性",s:"result"},
+  {id:387,w:"stable",m:"安定した",s:"steady"},
+  {id:389,w:"classic",m:"",s:"typical"},
+  {id:390,w:"priority",m:"優先事項",s:""},
+  {id:408,w:"tension",m:"",s:"strain"},
+  {id:409,w:"permission",m:"",s:"consent"},
+  {id:410,w:"presentation",m:"",s:"submission"},
+  {id:411,w:"affair",m:"",s:"matter"},
+  {id:412,w:"roll",m:"",s:"turn"},
+  {id:413,w:"delay",m:"",s:"postpone"},
+  {id:414,w:"hang",m:"",s:"put up"},
+  {id:415,w:"confident",m:"",s:"sure"},
+  {id:434,w:"poverty",m:"",s:"hardship"},
+  {id:435,w:"characteristic",m:"",s:"feature"},
+  {id:436,w:"sake",m:"",s:"benefit"},
+  {id:438,w:"dominant",m:"支配的な",s:"main"},
+  {id:439,w:"constantly",m:"",s:"always"},
+  {id:440,w:"vary",m:"",s:"differ"},
+  {id:441,w:"depth",m:"",s:""},
+  {id:459,w:"suspect",m:"を疑う；容疑者",s:"think"},
+  {id:460,w:"bond",m:"絆；結合；債券",s:"tie"},
+  {id:461,w:"enthusiasm",m:"",s:"passion"},
+  {id:462,w:"spare",m:"",s:"extra"},
+  {id:463,w:"extraordinary",m:"",s:"unusual"},
+  {id:464,w:"leisure",m:"",s:"free time"},
+  {id:465,w:"visible",m:"目に見える",s:"perceptible"},
+  {id:466,w:"device",m:"",s:"instrument"},
+  {id:476,w:"disaster",m:"",s:"catastrophe"},
+  {id:477,w:"satisfaction",m:"",s:"contentment"},
+  {id:478,w:"string",m:"",s:"cord"},
+  {id:480,w:"childhood",m:"",s:"youth"},
+  {id:481,w:"delighted",m:"",s:"pleased"},
+  {id:482,w:"poetry",m:"",s:"poems"},
+  {id:483,w:"expense",m:"",s:"cost"},
+  {id:493,w:"estimate",m:"を見積もる；見積もり",s:"assess"},
+  {id:494,w:"proof",m:"",s:"evidence"},
+  {id:495,w:"deaf",m:"",s:"hearing"},
+  {id:497,w:"dozen",m:"",s:"twelve"},
+  {id:498,w:"paragraph",m:"段落",s:"section"},
+  {id:499,w:"resources",m:"",s:""},
+  {id:500,w:"trend",m:"傾向；流行",s:"tendency"},
+  {id:518,w:"excitement",m:"興奮；刺激",s:"enthusiasm"},
+  {id:519,w:"settle",m:"を解決する；定住する",s:"resolve"},
+  {id:520,w:"layer",m:"層",s:"covering"},
+  {id:521,w:"wheel",m:"車輪；ハンドル",s:""},
+  {id:522,w:"platform",m:"",s:"stage"},
+  {id:523,w:"schedule",m:"",s:"timetable"},
+  {id:524,w:"creative",m:"",s:"imaginative"},
+  {id:525,w:"innocent",m:"",s:"guiltless"},
+  {id:543,w:"raw",m:"",s:"uncooked"},
+  {id:544,w:"machinery",m:"",s:"equipment"},
+  {id:545,w:"refuse",m:"",s:"reject"},
+  {id:546,w:"witness",m:"",s:"observe"},
+  {id:548,w:"landing",m:"",s:"touchdown"},
+  {id:549,w:"informal",m:"",s:"casual"},
+  {id:550,w:"demonstrate",m:"を実証する",s:"show"},
+  {id:588,w:"perception",m:"認識",s:"awareness"},
+  {id:590,w:"arrest",m:"",s:"apprehend"},
+  {id:591,w:"trace",m:"追跡する；痕跡",s:"sign"},
+  {id:611,w:"fortune",m:"",s:"wealth"},
+  {id:612,w:"talent",m:"",s:"gift"},
+  {id:613,w:"strict",m:"",s:"rigorous"},
+  {id:614,w:"tap",m:"",s:"valve"},
+  {id:616,w:"wound",m:"",s:"injury"},
+  {id:617,w:"dare",m:"あえて〜する",s:"tsS"},
+  {id:618,w:"emerge",m:"現れる；浮上する",s:"appear"},
+  {id:628,w:"convenient",m:"",s:"handy"},
+  {id:629,w:"biological",m:"",s:"biotic"},
+  {id:630,w:"warmth",m:"",s:"heat"},
+  {id:631,w:"earn",m:"",s:"be paid"},
+  {id:654,w:"physics",m:"",s:"physical science"},
+  {id:655,w:"invitation",m:"",s:"request"},
+  {id:656,w:"penny",m:"",s:"cent"},
+  {id:657,w:"mate",m:"",s:""},
+  {id:659,w:"underneath",m:"",s:"OF I"},
+  {id:660,w:"complaint",m:"",s:"protest"},
+  {id:661,w:"differ",m:"",s:"vary"},
+  {id:679,w:"precious",m:"貴重な",s:"valuable"},
+  {id:680,w:"nasty",m:"",s:"unpleasant"},
+  {id:681,w:"participate",m:"参加する",s:"take part"},
+  {id:682,w:"combine",m:"",s:"mix"},
+  {id:685,w:"mount",m:"",s:"increase"},
+  {id:686,w:"remind",m:"",s:"help remember"},
+  {id:687,w:"chart",m:"",s:""},
+  {id:696,w:"fascinating",m:"魅力的な",s:"appealing"},
+  {id:697,w:"trap",m:"",s:"trick"},
+  {id:698,w:"ambulance",m:"",s:"rescue vehicle"},
+  {id:699,w:"crop",m:"",s:"harvest"},
+  {id:701,w:"explosion",m:"爆発",s:"blast"},
+  {id:702,w:"observe",m:"",s:"watch"},
+  {id:703,w:"patch",m:"",s:"piece of cloth"},
+  {id:722,w:"possess",m:"",s:"have"},
+  {id:723,w:"memorial",m:"",s:"monument"},
+  {id:724,w:"trick",m:"",s:"ploy"},
+  {id:725,w:"cliff",m:"",s:""},
+  {id:726,w:"flood",m:"",s:"deluge"},
+  {id:727,w:"cure",m:"",s:"remedy"},
+  {id:728,w:"disappointment",m:"",s:"dismay"},
+  {id:729,w:"seldom",m:"",s:"FRV"},
+  {id:747,w:"celebrate",m:"",s:"commemorate"},
+  {id:748,w:"import",m:"",s:"bring in"},
+  {id:749,w:"nightmare",m:"悪夢",s:"horrific event"},
+  {id:750,w:"shelf",m:"棚",s:"rack"},
+  {id:753,w:"practically",m:"実際に；ほとんど",s:"virtually"},
+  {id:754,w:"dreadful",m:"",s:"terrible"},
+  {id:764,w:"wealthy",m:"",s:""},
+  {id:766,w:"cruel",m:"",s:"brutal"},
+  {id:767,w:"organ",m:"",s:"body part"},
+  {id:790,w:"pretend",m:"",s:"fake"},
+  {id:791,w:"surroundings",m:"周囲；環境",s:"environment"},
+  {id:792,w:"pour",m:"",s:"stream"},
+  {id:794,w:"celebration",m:"",s:"party"},
+  {id:795,w:"owe",m:"",s:"be indebted"},
+  {id:796,w:"lean",m:"",s:"tilt"},
+  {id:797,w:"temper",m:"",s:"character"},
+  {id:807,w:"packet",m:"",s:"package"},
+  {id:808,w:"fetch",m:"",s:"bring"},
+  {id:809,w:"receipt",m:"",s:""},
+  {id:810,w:"assignment",m:"",s:""},
+  {id:811,w:"fry",m:"",s:"cook"},
+  {id:812,w:"miserable",m:"",s:"sad"},
+  {id:813,w:"ambassador",m:"",s:"diplomat"},
+  {id:814,w:"tear",m:"",s:""},
+  {id:832,w:"approve",m:"",s:"authorise"},
+  {id:833,w:"ashamed",m:"",s:"embarrassed"},
+  {id:834,w:"flour",m:"",s:"wheat powder"},
+  {id:835,w:"appoint",m:"",s:"name"},
+  {id:837,w:"occupy",m:"",s:"capture"},
+  {id:838,w:"sack",m:"",s:"bag"},
+  {id:839,w:"lid",m:"",s:"cap"},
+  {id:858,w:"volunteer",m:"",s:"offer"},
+  {id:859,w:"jealous",m:"",s:"envious"},
+  {id:860,w:"fist",m:"",s:"clenched hand"},
+  {id:861,w:"float",m:"",s:""},
+  {id:862,w:"handy",m:"",s:"convenient"},
+  {id:863,w:"accustomed",m:"",s:"used"},
+  {id:864,w:"quit",m:"",s:"leave"},
+  {id:865,w:"drawer",m:"",s:"storage space"},
+  {id:875,w:"sore",m:"",s:"painful"},
+  {id:876,w:"fog",m:"",s:"mist"},
+  {id:877,w:"beg",m:"",s:"ask for"},
+  {id:878,w:"swear",m:"",s:""},
+  {id:879,w:"refugee",m:"",s:"exile"},
+  {id:880,w:"lately",m:"",s:"recently"},
+  {id:881,w:"attach",m:"",s:"add"},
+  {id:882,w:"dismiss",m:"",s:"reject"},
+  {id:900,w:"hatch",m:"",s:"RD"},
+  {id:901,w:"parcel",m:"",s:"package"},
+  {id:902,w:"monument",m:"",s:"memorial"},
+  {id:903,w:"housework",m:"",s:"household chores"},
+  {id:905,w:"sometime",m:"",s:"someday"},
+  {id:906,w:"bullet",m:"",s:"projectile"},
+  {id:907,w:"painfully",m:"",s:"bitterly"},
+  {id:917,w:"chimney",m:"",s:"smokestack"},
+  {id:918,w:"insult",m:"",s:""},
+  {id:920,w:"disappearance",m:"",s:"vanishing"},
+  {id:922,w:"luggage",m:"",s:"baggage"},
+  {id:923,w:"sour",m:"酸っぱい",s:"acidic"},
+  {id:924,w:"spoil",m:"",s:""},
+  {id:946,w:"punish",m:"",s:""},
+  {id:947,w:"sincere",m:"誠実な",s:"heartfelt"},
+  {id:948,w:"anyhow",m:"",s:"anyway"},
+  {id:949,w:"interrupt",m:"",s:"disrupt"},
+  {id:950,w:"reference",m:"",s:"recommendation"},
+  {id:960,w:"tailor",m:"",s:"customise"},
+  {id:961,w:"invent",m:"",s:"devise"},
+  {id:962,w:"eyebrow",m:"",s:"brow"},
+  {id:963,w:"murmur",m:"",s:""},
+  {id:964,w:"plead",m:"",s:"beg"},
+  {id:965,w:"courageous",m:"",s:"brave"},
+  {id:966,w:"educate",m:"",s:"teach"},
+  {id:967,w:"brilliance",m:"",s:"brightness"},
+  {id:985,w:"valuables",m:"",s:"treasures"},
+  {id:986,w:"yell",m:"",s:"shout"},
+  {id:987,w:"excite",m:"",s:"thrill"},
+  {id:988,w:"sightseeing",m:"",s:"visiting sites"},
+  {id:990,w:"tale",m:"",s:"story"},
+  {id:991,w:"backyard",m:"",s:"garden"},
+  {id:993,w:"inhabitant",m:"",s:""},
+  {id:1002,w:"behaviour",m:"行動；振る舞い",s:""},
+  {id:1003,w:"scheme",m:"計画；策略",s:"plan"},
+  {id:1012,w:"related",m:"",s:"Ic"},
+  {id:1013,w:"alternative",m:"代替の；選択肢",s:""},
+  {id:1024,w:"discipline",m:"規律；分野",s:""},
+  {id:1025,w:"elderly",m:"",s:""},
+  {id:1026,w:"reduction",m:"",s:""},
+  {id:1034,w:"fundamental",m:"基本的な",s:""},
+  {id:1046,w:"outcome",m:"結果",s:"result"},
+  {id:1055,w:"numerous",m:"",s:"countless"},
+  {id:1056,w:"distinct",m:"明確な；異なる",s:"different"},
+  {id:1057,w:"launch",m:"",s:""},
+  {id:1064,w:"guarantee",m:"保証する",s:""},
+  {id:1077,w:"inevitable",m:"",s:"unavoidable"},
+  {id:1089,w:"mission",m:"",s:""},
+  {id:1121,w:"uncertainty",m:"",s:""},
+  {id:1131,w:"shed",m:"",s:"drop"},
+  {id:1143,w:"magnificent",m:"",s:"impressive"},
+  {id:1153,w:"alter",m:"",s:"modify"},
+  {id:1154,w:"mature",m:"",s:"ripe"},
+  {id:1155,w:"virtue",m:"",s:"integrity"},
+  {id:1166,w:"grain",m:"",s:"cereal"},
+  {id:1175,w:"pre",m:"",s:"ebb and flow"},
+  {id:1188,w:"clay",m:"",s:"earth"},
+  {id:1206,w:"harsh",m:"",s:"severe"},
+  {id:1207,w:"sympathetic",m:"",s:""},
+  {id:1209,w:"shortage",m:"",s:"lack"},
+  {id:1217,w:"conclude",m:"結論を下す",s:""},
+  {id:1287,w:"respectable",m:"",s:""},
+  {id:1289,w:"likewise",m:"",s:""},
+  {id:1306,w:"tutor",m:"",s:""},
+  {id:1307,w:"apparatus",m:"",s:""},
+  {id:1329,w:"genius",m:"",s:"talent"},
+  {id:1342,w:"adapt",m:"を適応させる",s:""},
+  {id:1344,w:"spray",m:"",s:""},
+  {id:1369,w:"ott",m:"",s:"lor"},
+  {id:1383,w:"similarity",m:"",s:"resemblance similar"},
+  {id:1386,w:"graphic",m:"",s:""},
+  {id:1411,w:"triple",m:"",s:""},
+  {id:1412,w:"voyage",m:"",s:"journey"},
+  {id:1420,w:"apt",m:"",s:"inclined"},
+  {id:1433,w:"earnest",m:"",s:""},
+  {id:1436,w:"ripe",m:"",s:""},
+  {id:1442,w:"anchor",m:"",s:""},
+  {id:1445,w:"seize",m:"",s:"grab"},
+  {id:1446,w:"sting",m:"",s:""},
+  {id:1452,w:"multiply",m:"を増やす",s:"increase"},
+  {id:1454,w:"endure",m:"",s:"bear"},
+  {id:1467,w:"depart",m:"",s:""},
+  {id:1474,w:"inherit",m:"",s:"succeed inheritance"},
+  {id:1475,w:"athlete",m:"",s:"sportsman"},
+  {id:1478,w:"vain",m:"",s:""},
+  {id:1533,w:"perspective",m:"視点；展望",s:""},
+  {id:1559,w:"jury",m:"陪審員",s:""},
+  {id:1574,w:"fabric",m:"生地；構造",s:"cloth"},
+  {id:1615,w:"supervision",m:"監督；管理",s:""},
+  {id:1618,w:"prior",m:"前の；優先する",s:""},
+  {id:1626,w:"prey",m:"",s:""},
+  {id:1636,w:"circulation",m:"",s:""},
+  {id:1644,w:"stimulus",m:"",s:"incentive"},
+  {id:1645,w:"ritual",m:"",s:""},
+  {id:1652,w:"bias",m:"",s:""},
+  {id:1673,w:"handicap",m:"",s:""},
+  {id:1674,w:"lasting",m:"",s:"enduring"},
+  {id:1685,w:"intimate",m:"",s:"close"},
+  {id:1693,w:"utility",m:"",s:""},
+  {id:1695,w:"realm",m:"",s:""},
+  {id:1730,w:"vicious",m:"",s:""},
+  {id:1732,w:"financially",m:"",s:"economically"},
+  {id:1752,w:"anticipate",m:"を予期する",s:""},
+  {id:1753,w:"disguise",m:"",s:"ic"},
+  {id:1761,w:"preferable",m:"",s:"kO"},
+  {id:1786,w:"gateway",m:"",s:"entrance"},
+  {id:1796,w:"tick",m:"",s:"mark"},
+  {id:1806,w:"boredom",m:"",s:"tedium"},
+  {id:1807,w:"plague",m:"",s:""},
+  {id:1816,w:"initiate",m:"",s:"launch"},
+  {id:1818,w:"exhaust",m:"",s:""},
+  {id:1827,w:"renew",m:"",s:"extend"},
+  {id:1837,w:"plough",m:"",s:""},
+  {id:1847,w:"pillar",m:"",s:"column"},
+  {id:1848,w:"prevail",m:"",s:"predominate"},
+  {id:1856,w:"indication",m:"",s:""},
+  {id:1876,w:"boost",m:"",s:""},
+  {id:1889,w:"bug",m:"",s:"fault"},
+  {id:1906,w:"sow",m:"",s:"plant"},
+  {id:1908,w:"grind",m:"",s:"mill"},
+  {id:1942,w:"equip",m:"",s:""},
+  {id:1957,w:"owing",m:"",s:"OHARC"},
+  {id:1960,w:"ape",m:"",s:""},
+  {id:1986,w:"diligent",m:"",s:""},
+  {id:1988,w:"whirl",m:"",s:""},
+  {id:2001,w:"expenditure",m:"支出；費用",s:""},
+  {id:2004,w:"arise",m:"生じる；起こる",s:"occur"},
+  {id:2015,w:"tue le explicit",m:"",s:""},
+  {id:2023,w:"hierarchy",m:"階層；序列",s:""},
+  {id:2024,w:"equilibrium",m:"均衡",s:""},
+  {id:2033,w:"integrity",m:"",s:"righteousness"},
+  {id:2044,w:"thesis",m:"",s:"dissertation"},
+  {id:2064,w:"offset",m:"",s:""},
+  {id:2082,w:"facilitate",m:"を促進する",s:""},
+  {id:2091,w:"warehouse",m:"",s:"storage"},
+  {id:2094,w:"riot",m:"",s:"turmoil"},
+  {id:2102,w:"clerical",m:"",s:"secretarial E"},
+  {id:2104,w:"municipal",m:"",s:"local"},
+  {id:2111,w:"trigger",m:"",s:""},
+  {id:2120,w:"fragile",m:"",s:"frail"},
+  {id:2121,w:"quota",m:"",s:"allocation"},
+  {id:2134,w:"pragmatic",m:"",s:"practical"},
+  {id:2136,w:"superficial",m:"",s:"surface"},
+  {id:2151,w:"con",m:"",s:"opposition"},
+  {id:2152,w:"comprise",m:"",s:""},
+  {id:2160,w:"mansion",m:"",s:"residence"},
+  {id:2161,w:"recipient",m:"",s:""},
+  {id:2173,w:"skeleton",m:"",s:""},
+  {id:2185,w:"haul",m:"",s:""},
+  {id:2191,w:"minimise",m:"",s:"minimize"},
+  {id:2194,w:"elastic",m:"",s:""},
+  {id:2200,w:"bait",m:"",s:"lure"},
+  {id:2215,w:"tug",m:"",s:""},
+  {id:2224,w:"menace",m:"",s:"danger"},
+  {id:2245,w:"supervise",m:"",s:"oversee"},
+  {id:2265,w:"scrub",m:"",s:"scour"},
+  {id:2274,w:"manifeste",m:"",s:"sign"},
+  {id:2283,w:"intuition",m:"",s:"instinct"},
+  {id:2285,w:"dismal",m:"",s:""},
+  {id:2295,w:"captive",m:"",s:"captured"},
+  {id:2296,w:"dice",m:"",s:""},
+  {id:2308,w:"prehistoric",m:"",s:"primitive"},
+  {id:2316,w:"durable",m:"",s:"long"},
+  {id:2325,w:"messy",m:"",s:"disorderly"},
+  {id:2336,w:"scoop",m:"",s:""},
+  {id:2346,w:"tranquil",m:"",s:"calm"},
+  {id:2353,w:"folklore",m:"",s:"folk tales"},
+  {id:2379,w:"linger",m:"",s:""},
+  {id:2385,w:"compile",m:"",s:"assemble"},
+  {id:2387,w:"anti",m:"",s:"ic KITS"},
+  {id:2388,w:"disdain",m:"",s:""},
+  {id:2397,w:"hive",m:"",s:""},
+  {id:2401,w:"depict",m:"を描写する",s:"portray"},
+  {id:2403,w:"thaw",m:"",s:"melting"},
+  {id:2404,w:"ancestry",m:"",s:"lineage"},
+  {id:2411,w:"aspire",m:"",s:"FSTLE"},
+  {id:2452,w:"ranch",m:"",s:"farm"},
+  {id:2453,w:"repel",m:"",s:"repulse"},
+  {id:2464,w:"deem",m:"",s:"K ches"},
+  {id:2471,w:"beverage",m:"",s:"drink"},
+  {id:2483,w:"adorn",m:"",s:"decorate"},
+  {id:2500,w:"magnify",m:"",s:""},
+  {id:2507,w:"carbon dioxide",m:"二酸化炭素",s:""},
+  {id:2514,w:"predominantly",m:"主に；大部分が",s:"mainly"},
+  {id:2517,w:"cognitive",m:"認知的な",s:"mental"},
+  {id:2527,w:"psychiatric",m:"精神医学の",s:"mental"},
+  {id:2541,w:"methodology",m:"",s:"methods"},
+  {id:2547,w:"nitrogen",m:"",s:"the element N"},
+  {id:2559,w:"onset",m:"",s:"outset"},
+  {id:2568,w:"sewage",m:"",s:"waste water"},
+  {id:2580,w:"opt",m:"",s:"iz"},
+  {id:2589,w:"dubious",m:"",s:""},
+  {id:2592,w:"archive",m:"",s:""},
+  {id:2606,w:"asthma",m:"",s:""},
+  {id:2620,w:"glossy",m:"",s:"shiny"},
+  {id:2622,w:"generic",m:"",s:"general"},
+  {id:2623,w:"articulate",m:"",s:"express"},
+  {id:2630,w:"tangible",m:"",s:""},
+  {id:2638,w:"curb",m:"",s:""},
+  {id:2640,w:"rig",m:"",s:"manipulate"},
+  {id:2657,w:"sanction",m:"制裁",s:""},
+  {id:2659,w:"indefinitely",m:"無期限に",s:""},
+  {id:2660,w:"embryo",m:"胚",s:""},
+  {id:2670,w:"untouched",m:"",s:""},
+  {id:2680,w:"brittle",m:"",s:"fragile"},
+  {id:2692,w:"cuisine",m:"",s:"food"},
+  {id:2698,w:"perverse",m:"",s:"illogical"},
+  {id:2699,w:"residue",m:"残留物",s:""},
+  {id:2720,w:"agitate",m:"",s:"stir"},
+  {id:2723,w:"womb",m:"",s:"uterus"},
+  {id:2732,w:"antiquity",m:"",s:"ancient times"},
+  {id:2740,w:"victimise",m:"",s:""},
+  {id:2742,w:"ingenuity",m:"創意工夫",s:""},
+  {id:2749,w:"renewable",m:"",s:"sustainable"},
+  {id:2750,w:"insecure",m:"",s:"unconfident"},
+  {id:2751,w:"lag",m:"",s:""},
+  {id:2758,w:"duplicate",m:"",s:""},
+  {id:2760,w:"adhesive",m:"",s:"glue"},
+  {id:2768,w:"opaque",m:"不透明な",s:"cloudy"},
+  {id:2775,w:"foreground",m:"",s:""},
+  {id:2776,w:"repeal",m:"",s:""},
+  {id:2777,w:"oversee",m:"",s:"supervise"},
+  {id:2785,w:"eerie",m:"",s:""},
+  {id:2786,w:"fungus",m:"",s:""},
+  {id:2787,w:"fidelity",m:"",s:""},
+  {id:2800,w:"amenity",m:"",s:"facility"},
+  {id:2809,w:"bolster",m:"",s:""},
+  {id:2819,w:"mentor",m:"",s:"adviser"},
+  {id:2821,w:"camouflage",m:"カモフラージュ",s:"disguise"},
+  {id:2832,w:"mimic",m:"",s:""},
+  {id:2838,w:"arduous",m:"骨の折れる",s:"laborious"},
+  {id:2839,w:"elicit",m:"",s:""},
+  {id:2848,w:"iceberg",m:"",s:""},
+  {id:2849,w:"murky",m:"",s:"dark"},
+  {id:2856,w:"deduce",m:"を推定する",s:"infer"},
+  {id:2859,w:"uncanny",m:"",s:"weird"},
+  {id:2866,w:"avert",m:"",s:""},
+  {id:2868,w:"deploy",m:"",s:"position"},
+  {id:2878,w:"flop",m:"",s:"slump"},
+  {id:2884,w:"painstaking",m:"",s:"laborious"},
+  {id:2887,w:"digit",m:"",s:"figure"},
+  {id:2893,w:"spawn",m:"",s:"breed"},
+  {id:2894,w:"aptitude",m:"",s:"ability"},
+  {id:2901,w:"perpetuate",m:"",s:""},
+  {id:2910,w:"avalanche",m:"",s:""},
+  {id:2911,w:"jolt",m:"",s:""},
+  {id:2912,w:"refute",m:"",s:"disprove"},
+  {id:2931,w:"detain",m:"",s:""},
+  {id:2959,w:"moisten",m:"",s:"dampen"},
+  {id:2965,w:"yolk",m:"",s:"ARSIC BA"},
+  {id:2975,w:"repute",m:"",s:"reputation"},
+  {id:2978,w:"unleash",m:"",s:"release"},
+  {id:2984,w:"degrade",m:"",s:"debase"},
+  {id:3003,w:"albeit",m:"〜であるが",s:"welewa"},
+  {id:3011,w:"optimal",m:"最適な",s:"optimum"},
+  {id:3012,w:"foliage",m:"葉",s:""},
+  {id:3022,w:"algae",m:"藻類",s:""},
+  {id:3025,w:"vicinity",m:"",s:""},
+  {id:3027,w:"undue",m:"",s:"excessive"},
+  {id:3035,w:"homage",m:"",s:""},
+  {id:3036,w:"floral",m:"",s:"of flowers"},
+  {id:3043,w:"respite",m:"",s:""},
+  {id:3058,w:"impoverish",m:"",s:""},
+  {id:3059,w:"arid",m:"",s:"dry"},
+  {id:3065,w:"sleek",m:"",s:""},
+  {id:3066,w:"apex",m:"",s:""},
+  {id:3067,w:"salvage",m:"",s:""},
+  {id:3085,w:"dissertation",m:"",s:""},
+  {id:3092,w:"holistic",m:"",s:"comprehensive"},
+  {id:3101,w:"outlay",m:"",s:""},
+  {id:3111,w:"precipitation",m:"",s:"rainfall"},
+  {id:3112,w:"enigma",m:"",s:"mystery"},
+  {id:3113,w:"pigment",m:"",s:"colouring matter"},
+  {id:3131,w:"resound",m:"",s:"echo"},
+  {id:3138,w:"detour",m:"",s:""},
+  {id:3139,w:"accrue",m:"蓄積する",s:"arise"},
+  {id:3141,w:"tremor",m:"",s:"shaking"},
+  {id:3150,w:"trappings",m:"",s:"decorations"},
+  {id:3159,w:"silt",m:"",s:""},
+  {id:3168,w:"impinge",m:"影響を与える",s:"affect"},
+  {id:3190,w:"cub",m:"",s:"baby"},
+  {id:3191,w:"snip",m:"",s:""},
+  {id:3199,w:"adjunct",m:"",s:"supplement"},
+  {id:3200,w:"sag",m:"",s:"sink"},
+  {id:3201,w:"fledgling",m:"",s:"chick"},
+  {id:3202,w:"threefold",m:"",s:"three times"},
+  {id:3211,w:"chum",m:"",s:"friend"},
+  {id:3224,w:"appreciably",m:"",s:"noticeably"},
+  {id:3225,w:"deviate",m:"",s:""},
+  {id:3252,w:"appease",m:"",s:""},
+  {id:3253,w:"herbivore",m:"",s:""},
+  {id:3254,w:"autism",m:"",s:""},
+  {id:3257,w:"predisposition",m:"",s:"UPT"},
+  {id:3260,w:"reroute",m:"",s:"redirect"},
+  {id:3266,w:"dehydration",m:"",s:"dryness"},
+  {id:3268,w:"downpour",m:"土砂降り",s:""},
+  {id:3278,w:"herbalism",m:"",s:"herbal medicine"},
+  {id:3287,w:"adage",m:"",s:"maxim"},
+  {id:3294,w:"solidify",m:"",s:""},
+  {id:3296,w:"exponential",m:"",s:""},
+  {id:3303,w:"prodigy",m:"",s:"genius"},
+  {id:3304,w:"picky",m:"",s:"fastidious"},
+  {id:3311,w:"seep",m:"",s:"permeate"},
+  {id:3322,w:"loath",m:"",s:"FSOKC"},
+  {id:3330,w:"unsay",m:"",s:""},
+  {id:3331,w:"proofread",m:"",s:"check"},
+  {id:3339,w:"permafrost",m:"",s:"frozen subsoil"},
+  {id:3348,w:"head start",m:"",s:"advantage"},
+  {id:3350,w:"hieroglyph",m:"",s:"picture symbol"},
+  {id:3351,w:"squishy",m:"",s:"soft"},
+  {id:3376,w:"septic",m:"",s:""},
+  {id:3388,w:"ignite",m:"",s:"kindle"},
+  {id:3415,w:"collate",m:"",s:"arrange"},
+  {id:3425,w:"wean",m:"",s:"remove"},
+  {id:3436,w:"cipher",m:"",s:"code"},
+  {id:3445,w:"decouple",m:"",s:"DS"},
+  {id:3446,w:"unrewarded",m:"",s:"uncompensated"},
+  {id:3452,w:"predispose",m:"",s:"incline"},
+  {id:3455,w:"studious",m:"",s:"scholarly"},
+  {id:3462,w:"pseudo-",m:"",s:"artificial"},
+  {id:3471,w:"suckle",m:"",s:"breastfeed"},
+  {id:3481,w:"insularity",m:"",s:""},
+  {id:3491,w:"marsupial",m:"",s:"pouched animal"},
+  {id:3492,w:"breakneck",m:"",s:"dangerous"},
+  {id:3498,w:"holidaymaking",m:"",s:"vacationing"}
+];
+
+// ===== ストレージ =====
+const SK='ielts_v2';
+function load(){try{const d=localStorage.getItem(SK);return d?JSON.parse(d):{progress:{},custom:[]}}catch{return{progress:{},custom:[]}}}
+function save(d){try{localStorage.setItem(SK,JSON.stringify(d))}catch{}}
+
+// ===== ユーティリティ =====
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+
+// ===== APP =====
+function App(){
+  const[tab,setTab]=useState('flash');
+  const[store,setStore]=useState(load);
+  const words=useMemo(()=>[...BASE_WORDS,...(store.custom||[])],[store.custom]);
+  const setProgress=useCallback(p=>{const ns={...store,progress:p};setStore(ns);save(ns)},[store]);
+  const addWord=useCallback(w=>{const nc=[...(store.custom||[]),w];const ns={...store,custom:nc};setStore(ns);save(ns)},[store]);
+  const knownCount=Object.values(store.progress).filter(Boolean).length;
+  return(
+    <div style={{maxWidth:480,margin:'0 auto',minHeight:'100vh',display:'flex',flexDirection:'column'}}>
+      <Nav tab={tab} setTab={setTab} known={knownCount} total={words.length}/>
+      <div style={{flex:1,paddingBottom:'env(safe-area-inset-bottom,16px)'}}>
+        {tab==='flash'&&<Flash words={words} progress={store.progress} setProgress={setProgress}/>}
+        {tab==='quiz'&&<Quiz words={words} progress={store.progress} setProgress={setProgress}/>}
+        {tab==='list'&&<List words={words} progress={store.progress} setProgress={setProgress}/>}
+        {tab==='add'&&<Add addWord={addWord} total={words.length}/>}
+      </div>
+    </div>
+  );
+}
+
+// ===== NAV =====
+function Nav({tab,setTab,known,total}){
+  const pct=total>0?Math.round(known/total*100):0;
+  const tabs=[['flash','🃏','カード'],['quiz','📝','クイズ'],['list','📖','一覧'],['add','➕','追加']];
+  return(
+    <div style={{background:'#0f172a',borderBottom:'1px solid #1e293b',position:'sticky',top:0,zIndex:50}}>
+      <div style={{padding:'12px 16px 8px',display:'flex',alignItems:'center',gap:12}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:800,color:'#e91e8c',letterSpacing:.3}}>IELTS 単語帳 3500</div>
+          <div style={{fontSize:11,color:'#475569',marginTop:1}}>習得 {known}/{total} ({pct}%) ・ 動画OCR収録</div>
+        </div>
+        <div style={{fontSize:11,fontWeight:700,color:pct>=80?'#34d399':pct>=50?'#fbbf24':'#64748b',
+          background:pct>=80?'#14532d22':pct>=50?'#78350f22':'#1e293b',
+          padding:'4px 10px',borderRadius:20,border:`1px solid ${pct>=80?'#34d39966':pct>=50?'#fbbf2466':'#334155'}`}}>
+          {pct}%
+        </div>
+      </div>
+      <div style={{padding:'0 16px 6px'}}>
+        <div className="progress-bar"><div className="progress-fill" style={{width:`${pct}%`}}/></div>
+      </div>
+      <div style={{display:'flex'}}>
+        {tabs.map(([id,icon,label])=>(
+          <button key={id} onClick={()=>setTab(id)} className="btn"
+            style={{flex:1,padding:'9px 4px',fontSize:10,fontWeight:700,
+              background:tab===id?'#1e293b':'transparent',
+              color:tab===id?'#e91e8c':'#475569',border:'none',cursor:'pointer',
+              borderBottom:tab===id?'2px solid #e91e8c':'2px solid transparent',
+              transition:'all .2s'}}>
+            <div style={{fontSize:18,marginBottom:2}}>{icon}</div>{label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===== FLASH CARD =====
+function Flash({words,progress,setProgress}){
+  const[filter,setFilter]=useState('all');
+  const[dir,setDir]=useState('en');
+  const[deck,setDeck]=useState(()=>shuffle(words));
+  const[idx,setIdx]=useState(0);
+  const[flipped,setFlipped]=useState(false);
+  const[key,setKey]=useState(0);
+
+  const pool=useMemo(()=>filter==='unknown'?deck.filter(w=>!progress[w.id]):deck,[deck,filter,progress]);
+  const cur=pool[idx%Math.max(pool.length,1)];
+  const isKnown=cur?!!progress[cur.id]:false;
+
+  function go(known){
+    if(!cur)return;
+    if(known!==undefined){const p={...progress,[cur.id]:known};setProgress(p)}
+    setFlipped(false);
+    setTimeout(()=>{setIdx(i=>(i+1)%Math.max(pool.length,1));setKey(k=>k+1)},150);
+  }
+
+  if(!cur||pool.length===0)return(
+    <div style={{padding:40,textAlign:'center'}}>
+      <div style={{fontSize:52,marginBottom:16}}>🎉</div>
+      <div style={{fontSize:18,fontWeight:700,color:'#34d399',marginBottom:8}}>全単語クリア！</div>
+      <button onClick={()=>setFilter('all')} className="btn"
+        style={{background:'#e91e8c',color:'#fff',border:'none',borderRadius:12,padding:'12px 28px',fontWeight:700,cursor:'pointer',fontSize:14}}>
+        全単語で再挑戦
+      </button>
+    </div>
+  );
+
+  return(
+    <div style={{padding:'14px 16px'}}>
+      {/* フィルター */}
+      <div style={{display:'flex',gap:6,marginBottom:14}}>
+        {[['all','全単語'],['unknown','未習得']].map(([v,l])=>(
+          <button key={v} onClick={()=>{setFilter(v);setIdx(0);setFlipped(false)}} className="btn"
+            style={{flex:1,padding:'7px',fontSize:11,fontWeight:700,
+              background:filter===v?'#e91e8c':'#1e293b',
+              color:filter===v?'#fff':'#64748b',border:'none',borderRadius:8,cursor:'pointer'}}>
+            {l}{v==='unknown'?` (${words.filter(w=>!progress[w.id]).length})`:''}
+          </button>
+        ))}
+        <button onClick={()=>{setDir(d=>d==='en'?'ja':'en')}} className="btn"
+          style={{padding:'7px 12px',fontSize:11,fontWeight:700,background:'#1e293b',
+            color:'#94a3b8',border:'none',borderRadius:8,cursor:'pointer'}}>
+          {dir==='en'?'英→日':'日→英'}
+        </button>
+        <button onClick={()=>{setDeck(shuffle(words));setIdx(0);setFlipped(false)}} className="btn"
+          style={{padding:'7px 12px',background:'#1e293b',color:'#64748b',border:'none',borderRadius:8,cursor:'pointer',fontSize:14}}>
+          🔀
+        </button>
+      </div>
+      {/* カウンター */}
+      <div style={{textAlign:'center',fontSize:11,color:'#475569',marginBottom:10}}>
+        {(idx%pool.length)+1} / {pool.length}
+        <span style={{marginLeft:8,color:'#475569'}}>#{String(cur.id).padStart(4,'0')}</span>
+      </div>
+      {/* カード */}
+      <div className="card-scene" key={key} style={{marginBottom:16}}>
+        <div className={`card-body slide-up${flipped?' flipped':''}`}
+          onClick={()=>setFlipped(f=>!f)} style={{minHeight:210}}>
+          {/* 表 */}
+          <div className="card-face" style={{
+            position:flipped?'absolute':'relative',width:'100%',minHeight:210,
+            background:'linear-gradient(145deg,#1e293b,#0f172a)',
+            borderRadius:20,border:'1px solid #334155',
+            display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:28,textAlign:'center'}}>
+            {isKnown&&<div style={{position:'absolute',top:14,right:16,fontSize:18}}>✅</div>}
+            {dir==='en'?(
+              <>
+                <div style={{fontSize:34,fontWeight:800,color:'#f8fafc',letterSpacing:.5,marginBottom:8}}>{cur.w}</div>
+                <div style={{fontSize:12,color:'#334155'}}>タップして意味を確認 👆</div>
+              </>
+            ):(
+              <>
+                <div style={{fontSize:22,fontWeight:700,color:'#f8fafc',marginBottom:8}}>{cur.m||'(意味未設定)'}</div>
+                {cur.s&&<div style={{fontSize:12,color:'#e91e8c'}}>≒ {cur.s}</div>}
+                <div style={{fontSize:12,color:'#334155',marginTop:8}}>タップして単語を確認 👆</div>
+              </>
+            )}
+          </div>
+          {/* 裏 */}
+          <div className="card-face card-back" style={{
+            position:'absolute',top:0,width:'100%',minHeight:210,
+            background:'linear-gradient(145deg,#1a0a2e,#0f0a1e)',
+            borderRadius:20,border:'1px solid #e91e8c44',
+            display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:28,textAlign:'center'}}>
+            {dir==='en'?(
+              <>
+                <div style={{fontSize:22,fontWeight:700,color:'#f1f5f9',marginBottom:8,lineHeight:1.4}}>{cur.m||<span style={{color:'#475569'}}>意味未登録</span>}</div>
+                {cur.s&&<div style={{fontSize:13,color:'#e91e8c',marginTop:4}}>≒ {cur.s}</div>}
+              </>
+            ):(
+              <div style={{fontSize:32,fontWeight:800,color:'#f8fafc',letterSpacing:.5}}>{cur.w}</div>
+            )}
+          </div>
+        </div>
+      </div>
+      {/* アクションボタン */}
+      {flipped?(
+        <div style={{display:'flex',gap:10}}>
+          <button onClick={()=>go(false)} className="btn"
+            style={{flex:1,padding:'15px',fontSize:14,fontWeight:700,
+              background:'#1e293b',color:'#f87171',border:'2px solid #334155',borderRadius:14,cursor:'pointer'}}>
+            😓 もう一度
+          </button>
+          <button onClick={()=>go(true)} className="btn"
+            style={{flex:1,padding:'15px',fontSize:14,fontWeight:700,
+              background:'#14532d22',color:'#34d399',border:'2px solid #34d39944',borderRadius:14,cursor:'pointer'}}>
+            ✅ 覚えた！
+          </button>
+        </div>
+      ):(
+        <button onClick={()=>go()} className="btn"
+          style={{width:'100%',padding:'13px',fontSize:13,fontWeight:600,
+            background:'#1e293b',color:'#475569',border:'1px solid #334155',borderRadius:14,cursor:'pointer'}}>
+          スキップ →
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ===== QUIZ =====
+function Quiz({words,progress,setProgress}){
+  const[state,setState]=useState('idle');
+  const[qs,setQs]=useState([]);
+  const[qi,setQi]=useState(0);
+  const[sel,setSel]=useState(null);
+  const[score,setScore]=useState(0);
+  const[shake,setShake]=useState(false);
+  const[dir,setDir]=useState('en2ja');
+
+  function start(){
+    const pool=shuffle(words).slice(0,Math.min(10,words.length));
+    const questions=pool.map(w=>{
+      const wrongs=shuffle(words.filter(x=>x.id!==w.id)).slice(0,3);
+      return{word:w,options:shuffle([w,...wrongs])};
+    });
+    setQs(questions);setQi(0);setSel(null);setScore(0);setState('playing');
+  }
+
+  function pick(opt){
+    if(sel)return;
+    setSel(opt);
+    const ok=opt.id===qs[qi].word.id;
+    if(ok){setScore(s=>s+1);const p={...progress,[qs[qi].word.id]:true};setProgress(p)}
+    else{setShake(true);setTimeout(()=>setShake(false),500)}
+    setTimeout(()=>{
+      if(qi+1>=qs.length)setState('result');
+      else{setQi(i=>i+1);setSel(null)}
+    },900);
+  }
+
+  if(state==='idle')return(
+    <div style={{padding:'32px 20px',textAlign:'center'}}>
+      <div style={{fontSize:52,marginBottom:16}}>📝</div>
+      <div style={{fontSize:20,fontWeight:800,marginBottom:6}}>クイズモード</div>
+      <div style={{color:'#64748b',fontSize:13,marginBottom:28}}>ランダム10問・4択で答えましょう</div>
+      <div style={{display:'flex',gap:8,marginBottom:28}}>
+        {[['en2ja','英 → 日'],['ja2en','日 → 英']].map(([v,l])=>(
+          <button key={v} onClick={()=>setDir(v)} className="btn"
+            style={{flex:1,padding:'10px',fontSize:13,fontWeight:700,
+              background:dir===v?'#e91e8c':'#1e293b',color:dir===v?'#fff':'#64748b',
+              border:'none',borderRadius:10,cursor:'pointer'}}>{l}</button>
+        ))}
+      </div>
+      <button onClick={start} className="btn"
+        style={{background:'linear-gradient(135deg,#e91e8c,#f43f5e)',color:'#fff',border:'none',
+          borderRadius:14,padding:'16px 48px',fontWeight:800,fontSize:16,cursor:'pointer'}}>
+        スタート
+      </button>
+    </div>
+  );
+
+  if(state==='result'){
+    const pct=Math.round(score/qs.length*100);
+    return(
+      <div style={{padding:'40px 20px',textAlign:'center'}}>
+        <div style={{fontSize:52,marginBottom:16}}>{pct>=80?'🎉':pct>=50?'💪':'📚'}</div>
+        <div style={{fontSize:22,fontWeight:800,marginBottom:6}}>結果</div>
+        <div style={{fontSize:52,fontWeight:900,color:'#e91e8c'}}>{score}<span style={{fontSize:22,color:'#475569'}}>/{qs.length}</span></div>
+        <div style={{fontSize:13,color:'#475569',marginBottom:32}}>正答率 {pct}%</div>
+        <button onClick={()=>setState('idle')} className="btn"
+          style={{background:'linear-gradient(135deg,#e91e8c,#f43f5e)',color:'#fff',border:'none',
+            borderRadius:14,padding:'14px 40px',fontWeight:700,fontSize:15,cursor:'pointer'}}>
+          もう一度
+        </button>
+      </div>
+    );
+  }
+
+  const q=qs[qi];
+  return(
+    <div style={{padding:'14px 16px'}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
+        <div style={{flex:1}}><div className="progress-bar"><div className="progress-fill" style={{width:`${qi/qs.length*100}%`}}/></div></div>
+        <div style={{fontSize:11,color:'#475569'}}>{qi+1}/{qs.length}</div>
+      </div>
+      <div style={{
+        background:'linear-gradient(145deg,#1e293b,#0f172a)',borderRadius:16,padding:'28px 20px',
+        textAlign:'center',marginBottom:20,border:'1px solid #334155',
+        animation:shake?'shake .4s ease':'none'}}>
+        {dir==='en2ja'?(
+          <div style={{fontSize:34,fontWeight:800,color:'#f8fafc'}}>{q.word.w}</div>
+        ):(
+          <div style={{fontSize:22,fontWeight:700,color:'#f8fafc',lineHeight:1.4}}>{q.word.m}</div>
+        )}
+        <div style={{fontSize:11,color:'#334155',marginTop:6}}>#{String(q.word.id).padStart(4,'0')}</div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+        {q.options.map(opt=>{
+          const correct=opt.id===q.word.id;
+          const picked=sel?.id===opt.id;
+          let bg='#1e293b',border='#334155',col='#f1f5f9';
+          if(sel){
+            if(correct){bg='#14532d33';border='#34d399';col='#34d399'}
+            else if(picked){bg='#450a0a33';border='#f87171';col='#f87171'}
+          }
+          return(
+            <button key={opt.id} onClick={()=>pick(opt)} className="btn"
+              style={{padding:'13px 10px',fontSize:13,fontWeight:600,
+                background:bg,color:col,border:`2px solid ${border}`,
+                borderRadius:12,cursor:sel?'default':'pointer',
+                transition:'all .2s',lineHeight:1.3,minHeight:60}}>
+              {dir==='en2ja'?opt.m||'(意味未設定)':opt.w}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ===== LIST =====
+function List({words,progress,setProgress}){
+  const[search,setSearch]=useState('');
+  const[filter,setFilter]=useState('all');
+  const filtered=words.filter(w=>{
+    const s=search.toLowerCase();
+    const match=w.w.toLowerCase().includes(s)||w.m.includes(s);
+    const flt=filter==='all'||(filter==='known'?progress[w.id]:!progress[w.id]);
+    return match&&flt;
+  });
+  function toggle(id){const p={...progress,[id]:!progress[id]};setProgress(p)}
+  const counts={known:words.filter(w=>progress[w.id]).length,unknown:words.filter(w=>!progress[w.id]).length};
+  return(
+    <div>
+      <div style={{padding:'12px 16px 0'}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍  単語・意味で検索..."
+          style={{width:'100%',padding:'10px 14px',fontSize:13,
+            background:'#1e293b',color:'#f1f5f9',border:'1px solid #334155',
+            borderRadius:10,outline:'none'}}/>
+      </div>
+      <div style={{display:'flex',gap:6,padding:'10px 16px'}}>
+        {[['all',`全て(${words.length})`],['known',`習得(${counts.known})`],['unknown',`未習得(${counts.unknown})`]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFilter(v)} className="btn"
+            style={{padding:'5px 12px',fontSize:10,fontWeight:700,
+              background:filter===v?'#e91e8c':'#1e293b',
+              color:filter===v?'#fff':'#64748b',border:'none',borderRadius:20,cursor:'pointer'}}>
+            {l}
+          </button>
+        ))}
+      </div>
+      <div style={{paddingBottom:80}}>
+        {filtered.map(w=>(
+          <div key={w.id} style={{
+            padding:'12px 16px',borderBottom:'1px solid #1e293b',
+            display:'flex',alignItems:'flex-start',gap:12,
+            background:progress[w.id]?'#0a130a':'#0f172a',
+            transition:'background .2s'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3,flexWrap:'wrap'}}>
+                <span style={{fontSize:9,color:'#334155',fontFamily:'monospace'}}>#{String(w.id).padStart(4,'0')}</span>
+                <span style={{fontSize:16,fontWeight:700,color:'#f8fafc'}}>{w.w}</span>
+              </div>
+              <div style={{fontSize:13,color:'#cbd5e1',lineHeight:1.4}}>{w.m||<span style={{color:'#334155'}}>意味未設定</span>}</div>
+              {w.s&&<div style={{fontSize:11,color:'#e91e8c',marginTop:2}}>≒ {w.s}</div>}
+            </div>
+            <button onClick={()=>toggle(w.id)} className="btn"
+              style={{fontSize:20,background:'none',border:'none',cursor:'pointer',
+                opacity:progress[w.id]?1:.2,transition:'opacity .2s',padding:'2px',flexShrink:0}}>
+              ✅
+            </button>
+          </div>
+        ))}
+        {filtered.length===0&&(
+          <div style={{padding:40,textAlign:'center',color:'#334155'}}>該当する単語がありません</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ===== ADD =====
+function Add({addWord,total}){
+  const[w,setW]=useState('');
+  const[m,setM]=useState('');
+  const[s,setS]=useState('');
+  const[ok,setOk]=useState(false);
+
+  function submit(){
+    if(!w.trim()||!m.trim())return;
+    addWord({id:Date.now(),w:w.trim(),m:m.trim(),s:s.trim()});
+    setW('');setM('');setS('');setOk(true);setTimeout(()=>setOk(false),2000);
+  }
+
+  const inp={width:'100%',padding:'11px 14px',fontSize:13,
+    background:'#1e293b',color:'#f1f5f9',border:'1px solid #334155',
+    borderRadius:10,outline:'none',marginBottom:10};
+  return(
+    <div style={{padding:'16px'}}>
+      <div style={{fontSize:14,fontWeight:700,color:'#e91e8c',marginBottom:16}}>📥 単語を追加</div>
+      <div style={{fontSize:11,color:'#475569',marginBottom:4}}>英単語 *</div>
+      <input value={w} onChange={e=>setW(e.target.value)} placeholder="例: sustainable" style={inp}/>
+      <div style={{fontSize:11,color:'#475569',marginBottom:4}}>日本語の意味 *</div>
+      <input value={m} onChange={e=>setM(e.target.value)} placeholder="例: 持続可能な" style={inp}/>
+      <div style={{fontSize:11,color:'#475569',marginBottom:4}}>類義語（任意）</div>
+      <input value={s} onChange={e=>setS(e.target.value)} placeholder="例: eco-friendly" style={inp}/>
+      <button onClick={submit} disabled={!w.trim()||!m.trim()} className="btn"
+        style={{width:'100%',padding:'14px',fontSize:14,fontWeight:700,marginTop:4,
+          background:(w.trim()&&m.trim())?'linear-gradient(135deg,#e91e8c,#f43f5e)':'#1e293b',
+          color:(w.trim()&&m.trim())?'#fff':'#475569',
+          border:'none',borderRadius:14,cursor:'pointer',transition:'all .2s'}}>
+        ＋ 追加する
+      </button>
+      {ok&&<div style={{marginTop:12,padding:'11px',background:'#14532d33',border:'1px solid #34d399',
+        borderRadius:10,color:'#34d399',fontSize:12,fontWeight:600,textAlign:'center',
+        animation:'slideUp .3s ease'}}>✅ 追加しました！</div>}
+      <div style={{marginTop:24,padding:16,background:'#1e293b',borderRadius:12,fontSize:12,
+        color:'#64748b',lineHeight:1.8,border:'1px solid #334155'}}>
+        <div style={{fontWeight:700,color:'#94a3b8',marginBottom:6}}>📊 現在の収録状況</div>
+        <div>収録語数：<strong style={{color:'#e91e8c'}}>{total}語</strong>（動画OCRより抽出）</div>
+        <div style={{marginTop:4}}>Kindleで単語を見ながらここに追加すると<br/>フラッシュカードとクイズに反映されます</div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
