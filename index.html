@@ -794,9 +794,11 @@ function Flash({words,progress,setProgress}){
                 {cur.s&&<div style={{fontSize:13,color:'#e91e8c',marginTop:4}}>≒ {cur.s}</div>}
               </>
             ):(
-              <div style={{fontSize:32,fontWeight:800,color:'#f8fafc',letterSpacing:.5,marginBottom:8}}>{cur.w}</div>
-              <button onClick={e=>speak(cur.w,e)} className="btn"
-                style={{fontSize:22,background:'none',border:'none',cursor:'pointer',padding:'4px 12px',color:'#94a3b8'}}>🔊</button>
+              <>
+                <div style={{fontSize:32,fontWeight:800,color:'#f8fafc',letterSpacing:.5,marginBottom:8}}>{cur.w}</div>
+                <button onClick={e=>speak(cur.w,e)} className="btn"
+                  style={{fontSize:22,background:'none',border:'none',cursor:'pointer',padding:'4px 12px',color:'#94a3b8'}}>🔊</button>
+              </>
             )}
           </div>
         </div>
