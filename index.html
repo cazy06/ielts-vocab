@@ -631,6 +631,16 @@ function save(d){try{localStorage.setItem(SK,JSON.stringify(d))}catch{}}
 // ===== ユーティリティ =====
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
 
+// ===== 発音 =====
+function speak(word,e){
+  if(e){e.stopPropagation();}
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(word);
+  u.lang='en-US';u.rate=0.85;
+  window.speechSynthesis.speak(u);
+}
+
 // ===== APP =====
 function App(){
   const[tab,setTab]=useState('flash');
@@ -760,6 +770,8 @@ function Flash({words,progress,setProgress}){
             {dir==='en'?(
               <>
                 <div style={{fontSize:34,fontWeight:800,color:'#f8fafc',letterSpacing:.5,marginBottom:8}}>{cur.w}</div>
+                <button onClick={e=>speak(cur.w,e)} className="btn"
+                  style={{fontSize:22,background:'none',border:'none',cursor:'pointer',marginBottom:6,padding:'4px 12px',color:'#94a3b8'}}>🔊</button>
                 <div style={{fontSize:12,color:'#334155'}}>タップして意味を確認 👆</div>
               </>
             ):(
@@ -782,7 +794,9 @@ function Flash({words,progress,setProgress}){
                 {cur.s&&<div style={{fontSize:13,color:'#e91e8c',marginTop:4}}>≒ {cur.s}</div>}
               </>
             ):(
-              <div style={{fontSize:32,fontWeight:800,color:'#f8fafc',letterSpacing:.5}}>{cur.w}</div>
+              <div style={{fontSize:32,fontWeight:800,color:'#f8fafc',letterSpacing:.5,marginBottom:8}}>{cur.w}</div>
+              <button onClick={e=>speak(cur.w,e)} className="btn"
+                style={{fontSize:22,background:'none',border:'none',cursor:'pointer',padding:'4px 12px',color:'#94a3b8'}}>🔊</button>
             )}
           </div>
         </div>
@@ -893,7 +907,11 @@ function Quiz({words,progress,setProgress}){
         textAlign:'center',marginBottom:20,border:'1px solid #334155',
         animation:shake?'shake .4s ease':'none'}}>
         {dir==='en2ja'?(
-          <div style={{fontSize:34,fontWeight:800,color:'#f8fafc'}}>{q.word.w}</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10}}>
+            <div style={{fontSize:34,fontWeight:800,color:'#f8fafc'}}>{q.word.w}</div>
+            <button onClick={e=>{e.stopPropagation();speak(q.word.w)}} className="btn"
+              style={{fontSize:20,background:'none',border:'none',cursor:'pointer',padding:'4px',color:'#94a3b8'}}>🔊</button>
+          </div>
         ):(
           <div style={{fontSize:22,fontWeight:700,color:'#f8fafc',lineHeight:1.4}}>{q.word.m}</div>
         )}
@@ -964,6 +982,8 @@ function List({words,progress,setProgress}){
               <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3,flexWrap:'wrap'}}>
                 <span style={{fontSize:9,color:'#334155',fontFamily:'monospace'}}>#{String(w.id).padStart(4,'0')}</span>
                 <span style={{fontSize:16,fontWeight:700,color:'#f8fafc'}}>{w.w}</span>
+                <button onClick={e=>{e.stopPropagation();speak(w.w)}} className="btn"
+                  style={{fontSize:13,background:'none',border:'none',cursor:'pointer',padding:'0 2px',color:'#475569',lineHeight:1}}>🔊</button>
               </div>
               <div style={{fontSize:13,color:'#cbd5e1',lineHeight:1.4}}>{w.m||<span style={{color:'#334155'}}>意味未設定</span>}</div>
               {w.s&&<div style={{fontSize:11,color:'#e91e8c',marginTop:2}}>≒ {w.s}</div>}
