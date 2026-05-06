@@ -3087,7 +3087,8 @@ const BASE_WORDS=[
 
 // ===== ストレージ =====
 const SK='ielts_v2';
-function load(){try{const d=localStorage.getItem(SK);return d?JSON.parse(d):{progress:{},custom:[]}}catch{return{progress:{},custom:[]}}}
+function todayStr(){return new Date().toLocaleDateString('ja-JP');}
+function load(){try{const d=localStorage.getItem(SK);return d?JSON.parse(d):{progress:{},custom:[],dailyDate:'',dailyCount:0}}catch{return{progress:{},custom:[],dailyDate:'',dailyCount:0}}}
 function save(d){try{localStorage.setItem(SK,JSON.stringify(d))}catch{}}
 
 // ===== ユーティリティ =====
@@ -3123,16 +3124,34 @@ function speakJa(text){
 }
 
 // ===== APP =====
+const DAILY_GOAL=100;
 function App(){
   const[tab,setTab]=useState('flash');
   const[store,setStore]=useState(load);
   const words=useMemo(()=>[...BASE_WORDS,...(store.custom||[])],[store.custom]);
-  const setProgress=useCallback(p=>{const ns={...store,progress:p};setStore(ns);save(ns)},[store]);
+
+  // 日別カウンター付きsetProgress
+  const setProgress=useCallback(p=>{
+    const today=todayStr();
+    let dc=store.dailyDate===today?(store.dailyCount||0):0;
+    // 増減を検出（新たに覚えた / 未習に戻した）
+    const allIds=new Set([...Object.keys(p),...Object.keys(store.progress||{})]);
+    for(const id of allIds){
+      const was=!!(store.progress||{})[id];
+      const now=!!p[id];
+      if(!was&&now)dc++;
+      if(was&&!now)dc=Math.max(0,dc-1);
+    }
+    const ns={...store,progress:p,dailyDate:today,dailyCount:dc};
+    setStore(ns);save(ns);
+  },[store]);
+
   const addWord=useCallback(w=>{const nc=[...(store.custom||[]),w];const ns={...store,custom:nc};setStore(ns);save(ns)},[store]);
-  const knownCount=Object.values(store.progress).filter(Boolean).length;
+  const knownCount=Object.values(store.progress||{}).filter(Boolean).length;
+  const dailyCount=store.dailyDate===todayStr()?(store.dailyCount||0):0;
   return(
     <div style={{maxWidth:480,margin:'0 auto',minHeight:'100vh',display:'flex',flexDirection:'column'}}>
-      <Nav tab={tab} setTab={setTab} known={knownCount} total={words.length}/>
+      <Nav tab={tab} setTab={setTab} known={knownCount} total={words.length} dailyCount={dailyCount}/>
       <div style={{flex:1,paddingBottom:'env(safe-area-inset-bottom,16px)'}}>
         {tab==='flash'&&<Flash words={words} progress={store.progress} setProgress={setProgress}/>}
         {tab==='quiz'&&<Quiz words={words} progress={store.progress} setProgress={setProgress}/>}
@@ -3144,24 +3163,44 @@ function App(){
 }
 
 // ===== NAV =====
-function Nav({tab,setTab,known,total}){
+function Nav({tab,setTab,known,total,dailyCount}){
   const pct=total>0?Math.round(known/total*100):0;
+  const dpct=Math.min(100,Math.round((dailyCount/DAILY_GOAL)*100));
+  const done=dailyCount>=DAILY_GOAL;
   const tabs=[['flash','🃏','カード'],['quiz','📝','クイズ'],['list','📖','一覧'],['add','➕','追加']];
   return(
     <div style={{background:'#0f172a',borderBottom:'1px solid #1e293b',position:'sticky',top:0,zIndex:50}}>
-      <div style={{padding:'12px 16px 8px',display:'flex',alignItems:'center',gap:12}}>
+      <div style={{padding:'12px 16px 6px',display:'flex',alignItems:'center',gap:10}}>
         <div style={{flex:1}}>
           <div style={{fontSize:15,fontWeight:800,color:'#e91e8c',letterSpacing:.3}}>IELTS VOCAB</div>
-          <div style={{fontSize:11,color:'#475569',marginTop:1}}>習得 {known}/{total} ({pct}%) ・ 動画OCR収録</div>
+          <div style={{fontSize:11,color:'#475569',marginTop:1}}>累計習得 {known}/{total} ({pct}%)</div>
         </div>
-        <div style={{fontSize:11,fontWeight:700,color:pct>=80?'#34d399':pct>=50?'#fbbf24':'#64748b',
-          background:pct>=80?'#14532d22':pct>=50?'#78350f22':'#1e293b',
-          padding:'4px 10px',borderRadius:20,border:`1px solid ${pct>=80?'#34d39966':pct>=50?'#fbbf2466':'#334155'}`}}>
-          {pct}%
+        {/* 今日のカウンター */}
+        <div style={{textAlign:'center',minWidth:72}}>
+          <div style={{fontSize:10,color:'#64748b',marginBottom:2}}>今日の目標</div>
+          <div style={{fontSize:20,fontWeight:800,
+            color:done?'#34d399':dailyCount>=50?'#fbbf24':'#f1f5f9',
+            lineHeight:1}}>
+            {dailyCount}<span style={{fontSize:11,color:'#475569',fontWeight:400}}>/{DAILY_GOAL}</span>
+          </div>
+          {done&&<div style={{fontSize:9,color:'#34d399',marginTop:1}}>🎉 達成！</div>}
         </div>
       </div>
-      <div style={{padding:'0 16px 6px'}}>
-        <div className="progress-bar"><div className="progress-fill" style={{width:`${pct}%`}}/></div>
+      {/* 今日の進捗バー */}
+      <div style={{padding:'0 16px 4px',display:'flex',gap:6,alignItems:'center'}}>
+        <div style={{fontSize:9,color:'#475569',whiteSpace:'nowrap'}}>今日</div>
+        <div style={{flex:1,height:4,background:'#1e293b',borderRadius:2,overflow:'hidden'}}>
+          <div style={{height:'100%',borderRadius:2,transition:'width .5s ease',
+            width:`${dpct}%`,
+            background:done?'#34d399':dailyCount>=50?'linear-gradient(90deg,#f59e0b,#fbbf24)':'linear-gradient(90deg,#7c3aed,#e91e8c)'}}>
+          </div>
+        </div>
+        <div style={{fontSize:9,color:'#475569',whiteSpace:'nowrap'}}>累計</div>
+        <div style={{flex:1,height:4,background:'#1e293b',borderRadius:2,overflow:'hidden'}}>
+          <div style={{height:'100%',borderRadius:2,transition:'width .5s ease',
+            width:`${pct}%`,background:'linear-gradient(90deg,#e91e8c,#f43f5e)'}}>
+          </div>
+        </div>
       </div>
       <div style={{display:'flex'}}>
         {tabs.map(([id,icon,label])=>(
