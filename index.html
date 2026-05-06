@@ -3108,6 +3108,20 @@ function speak(word,e){
   }
 }
 
+// ===== 日本語発音 =====
+function speakJa(text){
+  if(!text)return;
+  if(window.responsiveVoice){
+    responsiveVoice.speak(text,'Japanese Female',{rate:0.85});
+  } else {
+    if(!window.speechSynthesis)return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ja-JP';u.rate=0.85;
+    window.speechSynthesis.speak(u);
+  }
+}
+
 // ===== APP =====
 function App(){
   const[tab,setTab]=useState('flash');
@@ -3173,17 +3187,51 @@ function Flash({words,progress,setProgress}){
   const[idx,setIdx]=useState(0);
   const[flipped,setFlipped]=useState(false);
   const[key,setKey]=useState(0);
+  const[autoPlay,setAutoPlay]=useState(false);
+  const[autoPhase,setAutoPhase]=useState(''); // 'en1','en2','ja1','ja2',''
+  const timersRef=useRef([]);
 
   const pool=useMemo(()=>filter==='unknown'?deck.filter(w=>!progress[w.id]):deck,[deck,filter,progress]);
   const cur=pool[idx%Math.max(pool.length,1)];
   const isKnown=cur?!!progress[cur.id]:false;
 
+  function clearAuto(){
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current=[];
+    if(window.responsiveVoice)responsiveVoice.cancel();
+    else if(window.speechSynthesis)window.speechSynthesis.cancel();
+    setAutoPhase('');
+  }
+
   function go(known){
     if(!cur)return;
     if(known!==undefined){const p={...progress,[cur.id]:known};setProgress(p)}
+    clearAuto();
     setFlipped(false);
     setTimeout(()=>{setIdx(i=>(i+1)%Math.max(pool.length,1));setKey(k=>k+1)},150);
   }
+
+  // 自動再生シーケンス
+  useEffect(()=>{
+    if(!autoPlay||!cur)return;
+    clearAuto();
+    setFlipped(false);
+    const add=(fn,d)=>{const id=setTimeout(fn,d);timersRef.current.push(id);};
+    // 英語×2
+    add(()=>{setAutoPhase('en1');speak(cur.w);},700);
+    add(()=>{setAutoPhase('en2');speak(cur.w);},2700);
+    // カード反転して日本語×2
+    add(()=>{setFlipped(true);},4600);
+    add(()=>{setAutoPhase('ja1');speakJa(cur.m||cur.w);},5200);
+    add(()=>{setAutoPhase('ja2');speakJa(cur.m||cur.w);},8500);
+    // 次へ
+    add(()=>{
+      setAutoPhase('');setFlipped(false);
+      setTimeout(()=>{setIdx(i=>(i+1)%Math.max(pool.length,1));setKey(k=>k+1);},200);
+    },12000);
+    return()=>clearAuto();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[autoPlay,idx,pool.length]);
 
   if(!cur||pool.length===0)return(
     <div style={{padding:40,textAlign:'center'}}>
@@ -3199,9 +3247,9 @@ function Flash({words,progress,setProgress}){
   return(
     <div style={{padding:'14px 16px'}}>
       {/* フィルター */}
-      <div style={{display:'flex',gap:6,marginBottom:14}}>
+      <div style={{display:'flex',gap:6,marginBottom:8}}>
         {[['all','全単語'],['unknown','未習得']].map(([v,l])=>(
-          <button key={v} onClick={()=>{setFilter(v);setIdx(0);setFlipped(false)}} className="btn"
+          <button key={v} onClick={()=>{setFilter(v);setIdx(0);setFlipped(false);clearAuto();}} className="btn"
             style={{flex:1,padding:'7px',fontSize:11,fontWeight:700,
               background:filter===v?'#e91e8c':'#1e293b',
               color:filter===v?'#fff':'#64748b',border:'none',borderRadius:8,cursor:'pointer'}}>
@@ -3213,10 +3261,26 @@ function Flash({words,progress,setProgress}){
             color:'#94a3b8',border:'none',borderRadius:8,cursor:'pointer'}}>
           {dir==='en'?'英→日':'日→英'}
         </button>
-        <button onClick={()=>{setDeck(shuffle(words));setIdx(0);setFlipped(false)}} className="btn"
+        <button onClick={()=>{setDeck(shuffle(words));setIdx(0);setFlipped(false);clearAuto();}} className="btn"
           style={{padding:'7px 12px',background:'#1e293b',color:'#64748b',border:'none',borderRadius:8,cursor:'pointer',fontSize:14}}>
           🔀
         </button>
+      </div>
+      {/* 自動再生バー */}
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+        <button onClick={()=>setAutoPlay(a=>!a)} className="btn"
+          style={{flex:1,padding:'9px',fontSize:12,fontWeight:700,
+            background:autoPlay?'#7c3aed':'#1e293b',
+            color:autoPlay?'#fff':'#64748b',
+            border:autoPlay?'2px solid #7c3aed':'2px solid #334155',
+            borderRadius:10,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+          {autoPlay?'⏹ 停止':'▶ 自動再生'}
+        </button>
+        {autoPlay&&(
+          <div style={{fontSize:11,color:'#94a3b8',background:'#1e293b',padding:'6px 10px',borderRadius:8,whiteSpace:'nowrap'}}>
+            {autoPhase==='en1'?'🔊 英語①':autoPhase==='en2'?'🔊 英語②':autoPhase==='ja1'?'🔈 日本語①':autoPhase==='ja2'?'🔈 日本語②':'⏸ 待機中'}
+          </div>
+        )}
       </div>
       {/* カウンター */}
       <div style={{textAlign:'center',fontSize:11,color:'#475569',marginBottom:10}}>
