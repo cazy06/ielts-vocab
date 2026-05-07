@@ -3364,7 +3364,7 @@ function Flash({words,progress,setProgress,marked,setMarked}){
           </div>
           {/* 裏 */}
           <div className="card-face card-back" style={{
-            position:'absolute',top:0,width:'100%',minHeight:210,
+            position:'absolute',top:0,width:'100%',minHeight:240,
             background:'linear-gradient(145deg,#1a0a2e,#0f0a1e)',
             borderRadius:20,border:'1px solid #e91e8c44',
             display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'18px 22px',textAlign:'center'}}>
@@ -3374,8 +3374,8 @@ function Flash({words,progress,setProgress,marked,setMarked}){
                 {cur.s&&<div style={{fontSize:12,color:'#e91e8c',marginBottom:6}}>≒ {cur.s}</div>}
                 {cur.e&&(
                   <div style={{marginTop:6,padding:'8px 10px',background:'rgba(255,255,255,0.06)',borderRadius:8,borderLeft:'3px solid #e91e8c55',textAlign:'left',width:'100%'}}>
-                    <div style={{fontSize:8,color:'#475569',marginBottom:2,letterSpacing:.8}}>EXAMPLE</div>
-                    <div style={{fontSize:11,color:'#94a3b8',lineHeight:1.6,fontStyle:'italic'}}>{cur.e}</div>
+                    <div style={{fontSize:9,color:'#475569',marginBottom:3,letterSpacing:.8}}>EXAMPLE</div>
+                    <div style={{fontSize:13,color:'#94a3b8',lineHeight:1.7,fontStyle:'italic'}}>{cur.e}</div>
                   </div>
                 )}
               </>
@@ -3386,8 +3386,8 @@ function Flash({words,progress,setProgress,marked,setMarked}){
                   style={{fontSize:20,background:'none',border:'none',cursor:'pointer',padding:'4px 12px',color:'#94a3b8',marginBottom:4}}>🔊</button>
                 {cur.e&&(
                   <div style={{marginTop:4,padding:'8px 10px',background:'rgba(255,255,255,0.06)',borderRadius:8,borderLeft:'3px solid #e91e8c55',textAlign:'left',width:'100%'}}>
-                    <div style={{fontSize:8,color:'#475569',marginBottom:2,letterSpacing:.8}}>EXAMPLE</div>
-                    <div style={{fontSize:11,color:'#94a3b8',lineHeight:1.6,fontStyle:'italic'}}>{cur.e}</div>
+                    <div style={{fontSize:9,color:'#475569',marginBottom:3,letterSpacing:.8}}>EXAMPLE</div>
+                    <div style={{fontSize:13,color:'#94a3b8',lineHeight:1.7,fontStyle:'italic'}}>{cur.e}</div>
                   </div>
                 )}
               </>
