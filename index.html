@@ -3128,6 +3128,12 @@ const DAILY_GOAL=100;
 function App(){
   const[tab,setTab]=useState('flash');
   const[store,setStore]=useState(load);
+  const[scrolled,setScrolled]=useState(false);
+  useEffect(()=>{
+    const fn=()=>setScrolled(window.scrollY>44);
+    window.addEventListener('scroll',fn,{passive:true});
+    return()=>window.removeEventListener('scroll',fn);
+  },[]);
   const words=useMemo(()=>[...BASE_WORDS,...(store.custom||[])],[store.custom]);
 
   // 日別カウンター付きsetProgress
@@ -3152,7 +3158,7 @@ function App(){
   const dailyCount=store.dailyDate===todayStr()?(store.dailyCount||0):0;
   return(
     <div style={{maxWidth:480,margin:'0 auto',minHeight:'100vh',display:'flex',flexDirection:'column'}}>
-      <Nav tab={tab} setTab={setTab} known={knownCount} total={words.length} dailyCount={dailyCount}/>
+      <Nav tab={tab} setTab={setTab} known={knownCount} total={words.length} dailyCount={dailyCount} scrolled={scrolled}/>
       <div style={{flex:1,paddingBottom:'env(safe-area-inset-bottom,16px)'}}>
         {tab==='flash'&&<Flash words={words} progress={store.progress} setProgress={setProgress} marked={store.marked||{}} setMarked={setMarked}/>}
         {tab==='quiz'&&<Quiz words={words} progress={store.progress} setProgress={setProgress}/>}
@@ -3164,54 +3170,75 @@ function App(){
 }
 
 // ===== NAV =====
-function Nav({tab,setTab,known,total,dailyCount}){
+function Nav({tab,setTab,known,total,dailyCount,scrolled}){
   const pct=total>0?Math.round(known/total*100):0;
   const dpct=Math.min(100,Math.round((dailyCount/DAILY_GOAL)*100));
   const done=dailyCount>=DAILY_GOAL;
   const tabs=[['flash','🃏','カード'],['quiz','📝','クイズ'],['list','📖','一覧'],['add','➕','追加']];
+  const TR='all .28s cubic-bezier(.4,0,.2,1)';
   return(
-    <div style={{background:'#0f172a',borderBottom:'1px solid #1e293b',position:'sticky',top:0,zIndex:50}}>
-      <div style={{padding:'12px 16px 6px',display:'flex',alignItems:'center',gap:10}}>
-        <div style={{flex:1}}>
-          <div style={{fontSize:15,fontWeight:800,color:'#e91e8c',letterSpacing:.3}}>IELTS VOCAB</div>
-          <div style={{fontSize:11,color:'#475569',marginTop:1}}>累計習得 {known}/{total} ({pct}%)</div>
+    <div style={{background:'#0f172a',borderBottom:'1px solid #1e293b',position:'sticky',top:0,zIndex:50,
+      transition:TR}}>
+      {/* タイトル行 — スクロール時に縮小 */}
+      <div style={{
+        display:'flex',alignItems:'center',gap:8,
+        padding:scrolled?'4px 16px 4px':'10px 16px 5px',
+        overflow:'hidden',transition:TR}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{
+            fontSize:scrolled?12:15,fontWeight:800,color:'#e91e8c',letterSpacing:.3,
+            transition:TR,lineHeight:1.2}}>IELTS VOCAB</div>
+          <div style={{
+            fontSize:10,color:'#475569',marginTop:scrolled?0:1,
+            maxHeight:scrolled?0:20,opacity:scrolled?0:1,
+            overflow:'hidden',transition:TR}}>
+            累計習得 {known}/{total} ({pct}%)
+          </div>
         </div>
         {/* 今日のカウンター */}
-        <div style={{textAlign:'center',minWidth:72}}>
-          <div style={{fontSize:10,color:'#64748b',marginBottom:2}}>今日の目標</div>
-          <div style={{fontSize:20,fontWeight:800,
+        <div style={{textAlign:'center',flexShrink:0,transition:TR}}>
+          <div style={{
+            fontSize:10,color:'#64748b',marginBottom:1,
+            maxHeight:scrolled?0:16,opacity:scrolled?0:1,
+            overflow:'hidden',transition:TR}}>今日の目標</div>
+          <div style={{
+            fontSize:scrolled?13:18,fontWeight:800,lineHeight:1,
             color:done?'#34d399':dailyCount>=50?'#fbbf24':'#f1f5f9',
-            lineHeight:1}}>
-            {dailyCount}<span style={{fontSize:11,color:'#475569',fontWeight:400}}>/{DAILY_GOAL}</span>
+            transition:TR}}>
+            {dailyCount}<span style={{fontSize:scrolled?9:11,color:'#475569',fontWeight:400}}>/{DAILY_GOAL}</span>
           </div>
-          {done&&<div style={{fontSize:9,color:'#34d399',marginTop:1}}>🎉 達成！</div>}
+          {done&&<div style={{fontSize:9,color:'#34d399',marginTop:1}}>🎉</div>}
         </div>
       </div>
-      {/* 今日の進捗バー */}
-      <div style={{padding:'0 16px 4px',display:'flex',gap:6,alignItems:'center'}}>
+      {/* プログレスバー — スクロール時に折り畳み */}
+      <div style={{
+        padding:'0 16px',display:'flex',gap:6,alignItems:'center',
+        maxHeight:scrolled?0:20,opacity:scrolled?0:1,
+        overflow:'hidden',transition:TR,
+        marginBottom:scrolled?0:4}}>
         <div style={{fontSize:9,color:'#475569',whiteSpace:'nowrap'}}>今日</div>
         <div style={{flex:1,height:4,background:'#1e293b',borderRadius:2,overflow:'hidden'}}>
           <div style={{height:'100%',borderRadius:2,transition:'width .5s ease',
             width:`${dpct}%`,
-            background:done?'#34d399':dailyCount>=50?'linear-gradient(90deg,#f59e0b,#fbbf24)':'linear-gradient(90deg,#7c3aed,#e91e8c)'}}>
-          </div>
+            background:done?'#34d399':dailyCount>=50?'linear-gradient(90deg,#f59e0b,#fbbf24)':'linear-gradient(90deg,#7c3aed,#e91e8c)'}}/>
         </div>
         <div style={{fontSize:9,color:'#475569',whiteSpace:'nowrap'}}>累計</div>
         <div style={{flex:1,height:4,background:'#1e293b',borderRadius:2,overflow:'hidden'}}>
           <div style={{height:'100%',borderRadius:2,transition:'width .5s ease',
-            width:`${pct}%`,background:'linear-gradient(90deg,#e91e8c,#f43f5e)'}}>
-          </div>
+            width:`${pct}%`,background:'linear-gradient(90deg,#e91e8c,#f43f5e)'}}/>
         </div>
       </div>
+      {/* タブ */}
       <div style={{display:'flex'}}>
         {tabs.map(([id,icon,label])=>(
           <button key={id} onClick={()=>setTab(id)} className="btn"
-            style={{flex:1,padding:'9px 4px',fontSize:10,fontWeight:700,
+            style={{flex:1,padding:scrolled?'6px 4px':'8px 4px',fontSize:10,fontWeight:700,
               background:tab===id?'#1e293b':'transparent',
               color:tab===id?'#e91e8c':'#475569',border:'none',cursor:'pointer',
               borderBottom:tab===id?'2px solid #e91e8c':'2px solid transparent',
-              transition:'all .2s'}}>
-            <div style={{fontSize:18,marginBottom:2}}>{icon}</div>{label}
+              transition:TR}}>
+            <div style={{fontSize:scrolled?15:18,marginBottom:1,transition:TR}}>{icon}</div>
+            {!scrolled&&label}
           </button>
         ))}
       </div>
