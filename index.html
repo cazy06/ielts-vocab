@@ -3120,15 +3120,40 @@ function mergeStores(local,cloud){
     cloudUpdatedAt:c.cloudUpdatedAt||l.cloudUpdatedAt||''
   };
 }
+function expandImportedStore(data){
+  if(data&&data.v===2){
+    const progress={};
+    const marked={};
+    (Array.isArray(data.p)?data.p:[]).forEach(id=>{progress[id]=true});
+    (Array.isArray(data.m)?data.m:[]).forEach(id=>{marked[id]=true});
+    return normalizeStore({
+      progress,
+      marked,
+      custom:Array.isArray(data.c)?data.c:[],
+      dailyDate:typeof data.d==='string'?data.d:'',
+      dailyCount:Number.isFinite(Number(data.n))?Number(data.n):0
+    });
+  }
+  return normalizeStore(data);
+}
 function decodeImportedStore(){
   try{
     const raw=new URLSearchParams(location.search).get('import');
     if(!raw)return null;
-    return normalizeStore(JSON.parse(decodeURIComponent(escape(atob(raw)))));
+    return expandImportedStore(JSON.parse(decodeURIComponent(escape(atob(raw)))));
   }catch{return null}
 }
 function encodeStoreForUrl(state){
-  return btoa(unescape(encodeURIComponent(JSON.stringify(normalizeStore(state)))));
+  const s=normalizeStore(state);
+  const compact={
+    v:2,
+    p:Object.keys(s.progress||{}).filter(id=>!!s.progress[id]),
+    m:Object.keys(s.marked||{}).filter(id=>!!s.marked[id]),
+    c:s.custom||[],
+    d:s.dailyDate||'',
+    n:Number(s.dailyCount)||0
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(compact))));
 }
 function cleanImportParam(){
   try{
