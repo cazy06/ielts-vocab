@@ -1,0 +1,7 @@
+name = "ielts-vocab"
+pages_build_output_dir = "."
+compatibility_date = "2026-05-26"
+
+[[kv_namespaces]]
+binding = "IELTS_VOCAB_STATE"
+id = "cb00a89f7b0a45bf8ead42eec5083ba4"

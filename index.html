@@ -3088,8 +3088,53 @@ const BASE_WORDS=[
 // ===== ストレージ =====
 const SK='ielts_v2';
 function todayStr(){return new Date().toLocaleDateString('ja-JP');}
-function load(){try{const d=localStorage.getItem(SK);if(d){const p=JSON.parse(d);if(!p.marked)p.marked={};return p;}return{progress:{},custom:[],dailyDate:'',dailyCount:0,marked:{}}}catch{return{progress:{},custom:[],dailyDate:'',dailyCount:0,marked:{}}}}
+function emptyStore(){return{progress:{},custom:[],dailyDate:'',dailyCount:0,marked:{}}}
+function normalizeStore(s){
+  return {
+    ...emptyStore(),
+    ...(s||{}),
+    progress:s&&s.progress&&typeof s.progress==='object'?s.progress:{},
+    marked:s&&s.marked&&typeof s.marked==='object'?s.marked:{},
+    custom:s&&Array.isArray(s.custom)?s.custom:[],
+    dailyDate:s&&typeof s.dailyDate==='string'?s.dailyDate:'',
+    dailyCount:s&&Number.isFinite(Number(s.dailyCount))?Number(s.dailyCount):0
+  };
+}
+function load(){try{const d=localStorage.getItem(SK);return d?normalizeStore(JSON.parse(d)):emptyStore()}catch{return emptyStore()}}
 function save(d){try{localStorage.setItem(SK,JSON.stringify(d))}catch{}}
+function hasLearningData(s){
+  const n=normalizeStore(s);
+  return Object.keys(n.progress).length>0||Object.keys(n.marked).length>0||n.custom.length>0;
+}
+function mergeStores(local,cloud){
+  const l=normalizeStore(local),c=normalizeStore(cloud);
+  const customMap=new Map();
+  [...(c.custom||[]),...(l.custom||[])].forEach(w=>{if(w&&w.id!=null)customMap.set(String(w.id),w)});
+  const progress={};
+  [...new Set([...Object.keys(c.progress||{}),...Object.keys(l.progress||{})])].forEach(id=>{progress[id]=!!c.progress[id]||!!l.progress[id]});
+  const marked={};
+  [...new Set([...Object.keys(c.marked||{}),...Object.keys(l.marked||{})])].forEach(id=>{marked[id]=!!c.marked[id]||!!l.marked[id]});
+  const dailyFromCloud=c.cloudUpdatedAt&&(!l.cloudUpdatedAt||c.cloudUpdatedAt>l.cloudUpdatedAt);
+  return {
+    ...l,
+    progress,
+    marked,
+    custom:[...customMap.values()],
+    dailyDate:dailyFromCloud?c.dailyDate:l.dailyDate,
+    dailyCount:dailyFromCloud?c.dailyCount:l.dailyCount,
+    cloudUpdatedAt:c.cloudUpdatedAt||l.cloudUpdatedAt||''
+  };
+}
+async function getCloudState(){
+  const res=await fetch('/api/vocab-state',{headers:{accept:'application/json'},cache:'no-store'});
+  if(!res.ok)throw new Error(res.status===401?'ログインが必要です':'同期先に接続できません');
+  return res.json();
+}
+async function putCloudState(state){
+  const res=await fetch('/api/vocab-state',{method:'POST',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify({state})});
+  if(!res.ok)throw new Error('クラウド保存に失敗しました');
+  return res.json();
+}
 
 // ===== ユーティリティ =====
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
@@ -3129,12 +3174,56 @@ function App(){
   const[tab,setTab]=useState('flash');
   const[store,setStore]=useState(load);
   const[scrolled,setScrolled]=useState(false);
+  const[sync,setSync]=useState({status:'checking',email:'',message:'同期確認中'});
+  const syncTimer=useRef(null);
+  const storeRef=useRef(store);
+  useEffect(()=>{storeRef.current=store},[store]);
   useEffect(()=>{
     const fn=()=>setScrolled(window.scrollY>44);
     window.addEventListener('scroll',fn,{passive:true});
     return()=>window.removeEventListener('scroll',fn);
   },[]);
   const words=useMemo(()=>[...BASE_WORDS,...(store.custom||[])],[store.custom]);
+  const saveCloudNow=useCallback(async(data)=>{
+    try{
+      setSync(s=>({...s,status:'saving',message:'クラウド保存中'}));
+      const result=await putCloudState(data);
+      const saved=normalizeStore(result.state);
+      setSync({status:'synced',email:result.email||'',message:'同期済み'});
+      return saved;
+    }catch(e){
+      setSync(s=>({...s,status:'error',message:e.message||'同期できません'}));
+      return null;
+    }
+  },[]);
+  const queueCloudSave=useCallback((data)=>{
+    if(syncTimer.current)clearTimeout(syncTimer.current);
+    syncTimer.current=setTimeout(()=>saveCloudNow(data),700);
+  },[saveCloudNow]);
+  const persist=useCallback((next,{cloud=true}={})=>{
+    const ns=normalizeStore(next);
+    setStore(ns);
+    save(ns);
+    if(cloud)queueCloudSave(ns);
+  },[queueCloudSave]);
+  const syncFromCloud=useCallback(async({manual=false}={})=>{
+    try{
+      setSync(s=>({...s,status:'checking',message:manual?'同期中':'同期確認中'}));
+      const result=await getCloudState();
+      const local=storeRef.current;
+      const merged=result.state?mergeStores(local,result.state):normalizeStore(local);
+      persist(merged,{cloud:false});
+      setSync({status:'synced',email:result.email||'',message:result.state?'同期済み':'初回同期準備済み'});
+      if(!result.state&&hasLearningData(merged)){
+        await saveCloudNow(merged);
+      }else if(result.state&&JSON.stringify(merged)!==JSON.stringify(normalizeStore(result.state))){
+        await saveCloudNow(merged);
+      }
+    }catch(e){
+      setSync({status:'local',email:'',message:e.message||'端末内保存のみ'});
+    }
+  },[persist,saveCloudNow]);
+  useEffect(()=>{syncFromCloud()},[syncFromCloud]);
 
   // 日別カウンター付きsetProgress
   const setProgress=useCallback(p=>{
@@ -3149,16 +3238,16 @@ function App(){
       if(was&&!now)dc=Math.max(0,dc-1);
     }
     const ns={...store,progress:p,dailyDate:today,dailyCount:dc};
-    setStore(ns);save(ns);
-  },[store]);
+    persist(ns);
+  },[store,persist]);
 
-  const addWord=useCallback(w=>{const nc=[...(store.custom||[]),w];const ns={...store,custom:nc};setStore(ns);save(ns)},[store]);
-  const setMarked=useCallback(m=>{const ns={...store,marked:m};setStore(ns);save(ns)},[store]);
+  const addWord=useCallback(w=>{const nc=[...(store.custom||[]),w];const ns={...store,custom:nc};persist(ns)},[store,persist]);
+  const setMarked=useCallback(m=>{const ns={...store,marked:m};persist(ns)},[store,persist]);
   const knownCount=Object.values(store.progress||{}).filter(Boolean).length;
   const dailyCount=store.dailyDate===todayStr()?(store.dailyCount||0):0;
   return(
     <div style={{maxWidth:480,margin:'0 auto',minHeight:'100vh',display:'flex',flexDirection:'column'}}>
-      <Nav tab={tab} setTab={setTab} known={knownCount} total={words.length} dailyCount={dailyCount} scrolled={scrolled}/>
+      <Nav tab={tab} setTab={setTab} known={knownCount} total={words.length} dailyCount={dailyCount} scrolled={scrolled} sync={sync} onSync={()=>syncFromCloud({manual:true})}/>
       <div style={{flex:1,paddingBottom:'env(safe-area-inset-bottom,16px)'}}>
         {tab==='flash'&&<Flash words={words} progress={store.progress} setProgress={setProgress} marked={store.marked||{}} setMarked={setMarked}/>}
         {tab==='quiz'&&<Quiz words={words} progress={store.progress} setProgress={setProgress}/>}
@@ -3170,7 +3259,7 @@ function App(){
 }
 
 // ===== NAV =====
-function Nav({tab,setTab,known,total,dailyCount,scrolled}){
+function Nav({tab,setTab,known,total,dailyCount,scrolled,sync,onSync}){
   const pct=total>0?Math.round(known/total*100):0;
   const dpct=Math.min(100,Math.round((dailyCount/DAILY_GOAL)*100));
   const done=dailyCount>=DAILY_GOAL;
@@ -3195,6 +3284,14 @@ function Nav({tab,setTab,known,total,dailyCount,scrolled}){
             累計習得 {known}/{total} ({pct}%)
           </div>
         </div>
+        <button onClick={onSync} className="btn"
+          style={{maxWidth:145,minWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+            padding:'5px 8px',fontSize:9,fontWeight:700,
+            background:sync?.status==='synced'?'#063f37':sync?.status==='saving'||sync?.status==='checking'?'#312e81':'#1e293b',
+            color:sync?.status==='synced'?'#99f6e4':sync?.status==='local'?'#94a3b8':'#c4b5fd',
+            border:'1px solid #334155',borderRadius:8,cursor:'pointer'}}>
+          {sync?.email?`Google: ${sync.email.split('@')[0]}`:sync?.message||'端末内保存'}
+        </button>
         {/* 今日のカウンター */}
         <div style={{textAlign:'center',flexShrink:0,transition:TR}}>
           <div style={{
