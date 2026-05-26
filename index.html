@@ -3087,6 +3087,7 @@ const BASE_WORDS=[
 
 // ===== ストレージ =====
 const SK='ielts_v2';
+const CLOUDFLARE_VOCAB_URL='https://ielts-cbt-simulator-private.pages.dev/vocab/';
 function todayStr(){return new Date().toLocaleDateString('ja-JP');}
 function emptyStore(){return{progress:{},custom:[],dailyDate:'',dailyCount:0,marked:{}}}
 function normalizeStore(s){
@@ -3099,12 +3100,6 @@ function normalizeStore(s){
     dailyDate:s&&typeof s.dailyDate==='string'?s.dailyDate:'',
     dailyCount:s&&Number.isFinite(Number(s.dailyCount))?Number(s.dailyCount):0
   };
-}
-function load(){try{const d=localStorage.getItem(SK);return d?normalizeStore(JSON.parse(d)):emptyStore()}catch{return emptyStore()}}
-function save(d){try{localStorage.setItem(SK,JSON.stringify(d))}catch{}}
-function hasLearningData(s){
-  const n=normalizeStore(s);
-  return Object.keys(n.progress).length>0||Object.keys(n.marked).length>0||n.custom.length>0;
 }
 function mergeStores(local,cloud){
   const l=normalizeStore(local),c=normalizeStore(cloud);
@@ -3124,6 +3119,43 @@ function mergeStores(local,cloud){
     dailyCount:dailyFromCloud?c.dailyCount:l.dailyCount,
     cloudUpdatedAt:c.cloudUpdatedAt||l.cloudUpdatedAt||''
   };
+}
+function decodeImportedStore(){
+  try{
+    const raw=new URLSearchParams(location.search).get('import');
+    if(!raw)return null;
+    return normalizeStore(JSON.parse(decodeURIComponent(escape(atob(raw)))));
+  }catch{return null}
+}
+function encodeStoreForUrl(state){
+  return btoa(unescape(encodeURIComponent(JSON.stringify(normalizeStore(state)))));
+}
+function cleanImportParam(){
+  try{
+    const url=new URL(location.href);
+    if(!url.searchParams.has('import'))return;
+    url.searchParams.delete('import');
+    history.replaceState(null,'',url.pathname+(url.search?url.search:'')+url.hash);
+  }catch{}
+}
+function load(){
+  try{
+    const d=localStorage.getItem(SK);
+    const local=d?normalizeStore(JSON.parse(d)):emptyStore();
+    const imported=decodeImportedStore();
+    if(imported){
+      const merged=mergeStores(local,imported);
+      save(merged);
+      cleanImportParam();
+      return merged;
+    }
+    return local;
+  }catch{return emptyStore()}
+}
+function save(d){try{localStorage.setItem(SK,JSON.stringify(d))}catch{}}
+function hasLearningData(s){
+  const n=normalizeStore(s);
+  return Object.keys(n.progress).length>0||Object.keys(n.marked).length>0||n.custom.length>0;
 }
 async function getCloudState(){
   const res=await fetch('/api/vocab-state',{headers:{accept:'application/json'},cache:'no-store'});
@@ -3245,9 +3277,25 @@ function App(){
   const setMarked=useCallback(m=>{const ns={...store,marked:m};persist(ns)},[store,persist]);
   const knownCount=Object.values(store.progress||{}).filter(Boolean).length;
   const dailyCount=store.dailyDate===todayStr()?(store.dailyCount||0):0;
+  const needsCloudMigration=!location.hostname.includes('ielts-cbt-simulator-private.pages.dev');
+  function migrateToCloud(){
+    const url=CLOUDFLARE_VOCAB_URL+'?import='+encodeURIComponent(encodeStoreForUrl(store));
+    location.href=url;
+  }
   return(
     <div style={{maxWidth:480,margin:'0 auto',minHeight:'100vh',display:'flex',flexDirection:'column'}}>
       <Nav tab={tab} setTab={setTab} known={knownCount} total={words.length} dailyCount={dailyCount} scrolled={scrolled} sync={sync} onSync={()=>syncFromCloud({manual:true})}/>
+      {needsCloudMigration&&hasLearningData(store)&&(
+        <div style={{margin:'10px 16px 0',padding:12,background:'#082f49',border:'1px solid #0ea5e9',borderRadius:12,color:'#e0f2fe'}}>
+          <div style={{fontSize:12,fontWeight:800,marginBottom:6}}>Cloudflare同期へ移行できます</div>
+          <div style={{fontSize:11,lineHeight:1.5,color:'#bae6fd',marginBottom:9}}>この端末の習得済み・マーク状態をCloudflare版へ引き継ぎます。</div>
+          <button onClick={migrateToCloud} className="btn"
+            style={{width:'100%',padding:'10px 12px',fontSize:12,fontWeight:800,
+              background:'#0284c7',color:'#fff',border:'none',borderRadius:10,cursor:'pointer'}}>
+            Cloudflare版へ移行
+          </button>
+        </div>
+      )}
       <div style={{flex:1,paddingBottom:'env(safe-area-inset-bottom,16px)'}}>
         {tab==='flash'&&<Flash words={words} progress={store.progress} setProgress={setProgress} marked={store.marked||{}} setMarked={setMarked}/>}
         {tab==='quiz'&&<Quiz words={words} progress={store.progress} setProgress={setProgress}/>}
