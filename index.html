@@ -20,7 +20,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .card-body.flipped{transform:rotateY(180deg)}
 .card-face{backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .card-back{transform:rotateY(180deg)}
-.etymology{font-size:12px;color:#94a3b8;font-style:italic;margin:4px 0 8px;line-height:1.5;text-align:left;width:100%}
+.etymology{font-size:12px;color:#94a3b8;margin:6px 0 8px;line-height:1.5;text-align:left;width:100%}
+.et-title{font-size:10px;font-weight:800;color:#facc15;letter-spacing:.7px;margin-bottom:5px}
+.et-parts{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.et-part{background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.24);border-radius:7px;padding:5px 7px;min-width:0;flex:1 1 86px}
+.et-piece{font-size:12px;font-weight:800;color:#f8fafc;line-height:1.25;word-break:break-word}
+.et-meaning{font-size:10px;color:#cbd5e1;line-height:1.35;margin-top:2px}
+.et-hint{font-size:11px;color:#f8fafc;background:rgba(255,255,255,.05);border-left:3px solid #facc15;border-radius:6px;padding:6px 8px;margin-bottom:5px}
+.et-source{font-size:10px;color:#94a3b8;font-style:italic;line-height:1.45}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
@@ -3141,6 +3148,111 @@ function expandImportedStore(data){
   }
   return normalizeStore(data);
 }
+
+const PREFIXES=[
+  ['inter','inter-','間で・相互に'],['trans','trans-','越えて・移して'],['under','under-','下に・不足して'],
+  ['over','over-','上に・過度に'],['counter','counter-','反対に・対抗して'],['super','super-','上に・超えて'],
+  ['micro','micro-','小さい'],['multi','multi-','多くの'],['intro','intro-','内側へ'],['extra','extra-','外へ・範囲外'],
+  ['anti','anti-','反対・対抗'],['auto','auto-','自分で・自動'],['bene','bene-','良い・よく'],['circum','circum-','周りに'],
+  ['coll','col-/com-','共に・一緒に'],['comm','com-','共に・完全に'],['comp','com-','共に・完全に'],['conc','con-','共に・完全に'],
+  ['conf','con-','共に・完全に'],['cons','con-','共に・完全に'],['cont','con-','共に・完全に'],['cor','cor-','共に・完全に'],
+  ['contra','contra-','反対に'],['de','de-','下へ・離れて・否定'],['dis','dis-','離れて・否定'],['ex','ex-','外へ・前の'],
+  ['em','em-/en-','中へ・そうする'],['en','en-','中へ・そうする'],['fore','fore-','前もって'],['im','im-/in-','中へ・否定'],
+  ['il','il-/in-','否定・中へ'],['ir','ir-/in-','否定・中へ'],['in','in-','中へ・否定'],['mis','mis-','誤って・悪く'],
+  ['non','non-','否定'],['ob','ob-','向かって・反対に'],['op','ob-/op-','向かって・反対に'],['per','per-','完全に・通して'],
+  ['pre','pre-','前に'],['pro','pro-','前へ・賛成'],['re','re-','再び・後ろへ'],['se','se-','離れて'],['sub','sub-','下に'],
+  ['suc','sub-/suc-','下に'],['suf','sub-/suf-','下に'],['sup','sub-/sup-','下に'],['sur','sur-','上に・越えて'],['un','un-','否定・逆に']
+];
+const SUFFIXES=[
+  ['ability','-ability','できる性質'],['ibility','-ibility','できる性質'],['ation','-ation','行為・状態'],['ition','-ition','行為・状態'],
+  ['ment','-ment','結果・もの・状態'],['ness','-ness','性質・状態'],['ship','-ship','状態・資格'],['ence','-ence','状態・性質'],
+  ['ance','-ance','状態・性質'],['ency','-ency','状態・性質'],['ancy','-ancy','状態・性質'],['ity','-ity','性質・状態'],
+  ['ive','-ive','性質がある'],['ative','-ative','性質がある'],['able','-able','できる'],['ible','-ible','できる'],
+  ['al','-al','性質の・関係する'],['ial','-ial','関係する'],['ous','-ous','多い・性質がある'],['ful','-ful','満ちた'],
+  ['less','-less','ない'],['ly','-ly','〜のように'],['er','-er','人・比較'],['or','-or','人・もの'],['ee','-ee','される人'],
+  ['ist','-ist','人・専門家'],['ism','-ism','主義・体系'],['ize','-ize','〜にする'],['ise','-ise','〜にする'],['fy','-fy','〜にする'],
+  ['ion','-ion','行為・状態'],['sion','-sion','行為・状態'],['tion','-tion','行為・状態'],['ing','-ing','〜していること'],['ed','-ed','〜された']
+];
+const ROOTS=[
+  ['cept','取る・つかむ','accept / concept / except'],['ceiv','受け取る','receive / perceive'],['cap','頭・取る','capital / capture'],['cip','取る','participate / principle'],
+  ['tain','保つ・持つ','maintain / obtain'],['ten','保つ・伸ばす','tense / extend'],['duc','導く','produce / education'],['duct','導く','conduct / product'],
+  ['fer','運ぶ','transfer / offer'],['port','運ぶ','transport / support'],['mit','送る','submit / transmit'],['miss','送る','mission / emission'],
+  ['spect','見る','respect / inspect'],['spec','見る','species / specific'],['vis','見る','visible / revise'],['vid','見る','evidence / video'],
+  ['form','形づくる','form / inform'],['struct','積む・組み立てる','structure / construct'],['fact','作る','factor / manufacture'],['fect','作る','effect / perfect'],
+  ['fac','作る','facility / faculty'],['pose','置く','suppose / oppose'],['posit','置く','position / deposit'],['pon','置く','component / postpone'],
+  ['stat','立つ','state / status'],['stit','立てる','institution / substitute'],['sta','立つ','standard / stable'],['grad','歩む・段階','degree / gradual'],
+  ['gress','進む','progress / congress'],['ced','行く・進む','precede / access'],['ceed','行く・進む','proceed / succeed'],['cess','行く・進む','access / process'],
+  ['ven','来る','event / prevent'],['vent','来る','intervention / convention'],['form','形','reform / information'],['press','押す','pressure / express'],
+  ['plic','折る・重ねる','application / complex'],['plex','折る・重ねる','complex'],['lect','選ぶ・読む','select / collect'],['leg','読む・選ぶ・法','legal / lecture'],
+  ['log','言葉・学問','logic / biology'],['loqu','話す','colloquial / eloquent'],['dic','言う','indicate / predict'],['dict','言う','dictionary / predict'],
+  ['scrib','書く','describe / prescribe'],['script','書く','script / description'],['graph','書く・記録','graph / photograph'],['gram','書かれたもの','program / diagram'],
+  ['tract','引く','attract / distract'],['draw','引く','withdraw'],['ject','投げる','project / reject'],['pel','押す・動かす','compel / expel'],
+  ['pulse','押す','impulse / repulse'],['mov','動く','movement / remove'],['mot','動く','motion / promote'],['mob','動く','mobile'],
+  ['viv','生きる','survive / vivid'],['bio','生命','biology / biodiversity'],['gen','生む・種類','generate / gender'],['nat','生まれる','nature / nation'],
+  ['mort','死','mortality / immortal'],['corp','体','corporate / corpse'],['phys','自然・身体','physical / physics'],['psych','心','psychology'],
+  ['path','感じる・苦しむ','empathy / pathology'],['pass','感じる・苦しむ','passion / passive'],['sens','感じる','sensitive / sense'],['sent','感じる・送る','consent / sentiment'],
+  ['aud','聞く','audience / audit'],['phon','音','phone / microphone'],['voc','声・呼ぶ','vocab / advocate'],['claim','叫ぶ','proclaim / exclaim'],
+  ['cred','信じる','credible / credit'],['fid','信頼','confidence / fidelity'],['ver','真実','verify / verdict'],['cert','確かな','certain / certificate'],
+  ['prob','試す・証明','prove / probable'],['clar','明るい・明確','clarify / declare'],['luc','光','lucid / illustrate'],['lum','光','luminous / illuminate'],
+  ['numer','数','number / enumerate'],['quant','量','quantity'],['qual','性質','quality / qualify'],['valu','価値','value / evaluate'],
+  ['fin','終わり・境界','final / define'],['term','終わり・境界','determine / terminal'],['lim','境界','limit / eliminate'],['medi','中間','mediate / immediate'],
+  ['centr','中心','central / concentrate'],['circ','円・周り','circle / circumstance'],['cycle','輪','cycle / recycle'],['equ','等しい','equal / equivalent'],
+  ['uni','一つ','union / unique'],['bi','二つ','binary / combine'],['tri','三つ','triangle'],['poly','多い','policy / polytechnic'],
+  ['dem','人々','democracy / epidemic'],['pop','人々','population / popular'],['civ','市民','civil / civic'],['polit','都市・政治','politics / policy'],
+  ['reg','支配・導く','region / regulate'],['jur','法','jury / jurisdiction'],['legis','法律','legislation'],['govern','統治する','government'],
+  ['eco','家・環境','economy / ecology'],['nom','法・管理','economy / astronomy'],['labor','労働','labour / collaborate'],['oper','働く','operation / cooperate'],
+  ['manu','手','manufacture / manual'],['ped','足・子ども','pedestrian / pedagogy'],['man','手・人','manual / manage'],['mater','母・材料','material'],
+  ['terr','土地','territory / terrestrial'],['geo','地球・土地','geography / geology'],['urb','都市','urban / suburb'],['agri','農地','agriculture'],
+  ['hydro','水','hydrology'],['aqua','水','aquatic'],['mar','海','marine'],['air','空気','airborne'],['therm','熱','thermal'],
+  ['scope','見る道具','telescope / microscope'],['meter','測る','thermometer / parameter'],['measure','測る','measurement'],['comput','計算する','computer'],
+  ['solve','解く','resolve / solution'],['solut','解く','solution'],['integr','全体・完全','integrate'],['part','部分','participate / particle'],
+  ['divid','分ける','divide / individual'],['sect','切る','section / insect'],['cid','切る・落ちる','decide / incident'],['cide','切る・殺す','suicide / decide'],
+  ['mem','覚える','memory / remember'],['mind','心','remind'],['learn','学ぶ','learning'],['teach','教える','teacher']
+];
+
+function findMorphemes(word){
+  const lower=(word||'').toLowerCase().replace(/[^a-z]/g,'');
+  if(!lower)return [];
+  const prefix=PREFIXES.find(([raw])=>lower.startsWith(raw)&&lower.length>raw.length+2);
+  const suffix=SUFFIXES.find(([raw])=>lower.endsWith(raw)&&lower.length>raw.length+2);
+  const root=ROOTS.find(([raw])=>{
+    const idx=lower.indexOf(raw);
+    return idx>=0&&lower.length>raw.length+1&&(!prefix||idx>=prefix[0].length-1)&&(!suffix||idx+raw.length<=lower.length-suffix[0].length+1);
+  });
+  const parts=[];
+  if(prefix)parts.push({piece:prefix[1],meaning:prefix[2],kind:'prefix'});
+  if(root)parts.push({piece:root[0],meaning:root[1],kind:'root',family:root[2]});
+  if(suffix)parts.push({piece:suffix[1],meaning:suffix[2],kind:'suffix'});
+  const seen=new Set();
+  return parts.filter(p=>{const key=p.kind+p.piece;if(seen.has(key))return false;seen.add(key);return true;});
+}
+
+function EtymologyBlock({word,meaning,et}){
+  if(!et)return null;
+  const parts=findMorphemes(word);
+  const source=et.replace(/^(由来|継承|借用|構成):\s*/,'');
+  return(
+    <div className="etymology">
+      <div className="et-title">{parts.length?'語源分解':'語源'}</div>
+      {parts.length>0&&(
+        <>
+          <div className="et-parts">
+            {parts.map((p,i)=>(
+              <div className="et-part" key={i}>
+                <div className="et-piece">{p.piece}</div>
+                <div className="et-meaning">{p.meaning}</div>
+              </div>
+            ))}
+          </div>
+          <div className="et-hint">
+            {parts.map(p=>p.meaning).join(' + ')} → {meaning||word}
+          </div>
+        </>
+      )}
+      <div className="et-source">由来: {source}</div>
+    </div>
+  );
+}
 function decodeImportedStore(){
   try{
     const raw=new URLSearchParams(location.search).get('import');
@@ -3574,7 +3686,7 @@ function Flash({words,progress,setProgress,marked,setMarked}){
               <>
                 <div style={{fontSize:21,fontWeight:700,color:'#f1f5f9',marginBottom:4,lineHeight:1.4}}>{cur.m||<span style={{color:'#475569'}}>意味未登録</span>}</div>
                 {cur.s&&<div style={{fontSize:12,color:'#e91e8c',marginBottom:6}}>≒ {cur.s}</div>}
-                {cur.et&&<div className="etymology">📖 {cur.et}</div>}
+                <EtymologyBlock word={cur.w} meaning={cur.m} et={cur.et}/>
                 {cur.e&&(
                   <div style={{marginTop:6,padding:'10px 12px',background:'#000000',borderRadius:8,borderLeft:'3px solid #e91e8c',textAlign:'left',width:'100%'}}>
                     <div style={{fontSize:9,color:'#e91e8c',marginBottom:3,letterSpacing:.8,fontWeight:700}}>EXAMPLE</div>
@@ -3588,7 +3700,7 @@ function Flash({words,progress,setProgress,marked,setMarked}){
                 <div style={{fontSize:30,fontWeight:800,color:'#f8fafc',letterSpacing:.5,marginBottom:6}}>{cur.w}</div>
                 <button onClick={e=>speak(cur.w,e)} className="btn"
                   style={{fontSize:20,background:'none',border:'none',cursor:'pointer',padding:'4px 12px',color:'#94a3b8',marginBottom:4}}>🔊</button>
-                {cur.et&&<div className="etymology">📖 {cur.et}</div>}
+                <EtymologyBlock word={cur.w} meaning={cur.m} et={cur.et}/>
                 {cur.e&&(
                   <div style={{marginTop:4,padding:'8px 10px',background:'rgba(255,255,255,0.06)',borderRadius:8,borderLeft:'3px solid #e91e8c55',textAlign:'left',width:'100%'}}>
                     <div style={{fontSize:9,color:'#475569',marginBottom:3,letterSpacing:.8}}>EXAMPLE</div>
